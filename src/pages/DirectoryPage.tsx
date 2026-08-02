@@ -4,6 +4,7 @@ import { cohorts, industries } from '../data/options';
 import { brandAssets, brandCopy } from '../data/brand';
 import { olderBatches, topBatches } from '../data/batches';
 import classMetrics from '../data/classMetrics.json';
+import { demoDirectoryProfiles } from '../data/demoDirectoryProfiles';
 import type { DirectoryFilters } from '../services/api';
 import type { BioBookProfile } from '../types/domain';
 
@@ -41,7 +42,7 @@ interface ClassMetrics {
 const metricsByBatch = classMetrics as Record<string, ClassMetrics>;
 
 export function DirectoryPage() {
-  const [wemba52Profiles, setWemba52Profiles] = useState<BioBookProfile[]>([]);
+  const [wemba52Profiles] = useState<BioBookProfile[]>(demoDirectoryProfiles);
   const [filters, setFilters] = useState<DirectoryFilters>({});
   const [selectedBatch, setSelectedBatch] = useState("WEMBA'52");
   const [activeTab, setActiveTab] = useState<DirectoryTab>('dashboard');
@@ -119,14 +120,6 @@ export function DirectoryPage() {
               <p className="eyebrow">{selectedBatch} directory</p>
               <h2>Directory would be live soon</h2>
               <p className="muted">The BioBook-powered alumni list is currently available for WEMBA'52.</p>
-            </section>
-          ) : wemba52Profiles.length === 0 ? (
-            <section className="panel unlock-panel">
-              <div>
-                <p className="eyebrow">Private directory</p>
-                <h2>WEMBA'52 directory requires secure hosting</h2>
-                <p className="muted">Real alumni records are not bundled into the static frontend. Use demo registration/login locally, or connect a secure backend before publishing classmate data.</p>
-              </div>
             </section>
           ) : directoryProfiles.length === 0 ? (
             <section className="panel coming-soon">
