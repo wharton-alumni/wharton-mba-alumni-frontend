@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="https://executivemba.wharton.upenn.edu/wp-content/plugins/martech-chupacabra/includes/images/favicon.ico" />
+    <title>Wharton Executive MBA Alumni Portal</title>
+  </head>
+  <body>
+    <script>
+      const redirect = sessionStorage.redirect;
+      delete sessionStorage.redirect;
+      if (redirect && redirect !== location.pathname + location.search + location.hash) {
+        history.replaceState(null, '', redirect);
+      }
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

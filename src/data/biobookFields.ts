@@ -1,0 +1,82 @@
+import type { BioBookProfile, RegistrationRequest } from '../types/domain';
+
+export interface BioBookField {
+  key: string;
+  label: string;
+  profileKey?: keyof BioBookProfile;
+  inputType?: 'text' | 'email' | 'password' | 'url' | 'number' | 'textarea' | 'select' | 'checkbox';
+  required?: boolean;
+  accountOnly?: boolean;
+}
+
+export const bioBookRegistrationFields: BioBookField[] = [
+  { key: 'Full legal name', label: 'Full legal name', profileKey: 'fullLegalName', required: true },
+  { key: 'Preferred name / Nickname', label: 'Preferred name / Nickname', profileKey: 'preferredNameNickname' },
+  { key: 'Pronouns', label: 'Pronouns', profileKey: 'pronouns' },
+  { key: 'Cohort', label: 'Cohort', profileKey: 'cohortCampus', inputType: 'select', required: true },
+  { key: 'Hometown (where you grew up)', label: 'Hometown (where you grew up)', profileKey: 'hometownWhereYouGrewUp' },
+  { key: 'Current City of Residence', label: 'Current City of Residence', profileKey: 'currentCityOfResidence', required: true },
+  { key: 'Languages spoken', label: 'Languages spoken', profileKey: 'languagesSpoken' },
+  { key: 'Current employer', label: 'Current employer', profileKey: 'currentEmployer', required: true },
+  { key: 'Current title / role', label: 'Current title / role', profileKey: 'currentTitleRole', required: true },
+  { key: 'Industry', label: 'Industry', profileKey: 'industry', inputType: 'select', required: true },
+  { key: 'Functional Area', label: 'Functional Area', profileKey: 'functionalArea' },
+  { key: 'Years of professional experience', label: 'Years of professional experience', profileKey: 'yearsOfProfessionalExperience' },
+  { key: 'Career trajectory in 3 bullets', label: 'Career trajectory in 3 bullets', profileKey: 'careerTrajectoryIn3Bullets', inputType: 'textarea' },
+  { key: 'Notable achievements / awards / patents / publications', label: 'Notable achievements / awards / patents / publications', profileKey: 'notableAchievementsAwardsPatentsPublications', inputType: 'textarea' },
+  { key: "Companies you've previously worked at", label: "Companies you've previously worked at", profileKey: 'companiesYouPreviouslyWorkedAt', inputType: 'textarea' },
+  { key: 'Board seats / advisory roles', label: 'Board seats / advisory roles', profileKey: 'boardSeatsAdvisoryRoles', inputType: 'textarea' },
+  { key: 'Work email', label: 'Work email', inputType: 'email', required: true, accountOnly: true },
+  { key: 'LinkedIn URL', label: 'LinkedIn URL', profileKey: 'linkedinUrl', inputType: 'url' },
+  { key: 'Undergraduate institution & Major', label: 'Undergraduate institution & Major', profileKey: 'undergraduateInstitutionMajor' },
+  { key: 'Graduate institution & Major', label: 'Graduate institution & Major', profileKey: 'graduateInstitutionMajor' },
+  { key: 'Certificates', label: 'Certificates', profileKey: 'certificates' },
+  { key: 'Post-MBA career goal', label: 'Post-MBA career goal', profileKey: 'postMbaCareerGoal', inputType: 'textarea' },
+  { key: 'Majors', label: 'Majors', profileKey: 'majors' },
+  { key: 'Concentrartion', label: 'Concentrartion', profileKey: 'concentration' },
+  { key: 'Hidden talent / fun fact', label: 'Hidden talent / fun fact', profileKey: 'hiddenTalentFunFact', inputType: 'textarea' },
+  { key: 'Hobbies & interests', label: 'Hobbies & interests', profileKey: 'hobbiesInterests', inputType: 'textarea' },
+  { key: 'Sports / fitness you play or follow', label: 'Sports / fitness you play or follow', profileKey: 'sportsFitnessYouPlayOrFollow', inputType: 'textarea' },
+  { key: "I can help classmates with...", label: "I can help classmates with...", profileKey: 'canHelpClassmatesWith', inputType: 'textarea' },
+  { key: "I'd love help with...", label: "I'd love help with...", profileKey: 'wouldLoveHelpWith', inputType: 'textarea' },
+  { key: 'Industries I want to break into / learn', label: 'Industries I want to break into / learn', profileKey: 'industriesWantToBreakIntoLearn', inputType: 'textarea' },
+  { key: 'Open to mentoring', label: 'Open to mentoring', profileKey: 'willingToMentor', inputType: 'checkbox' },
+  { key: 'Side projects, startups, or ventures', label: 'Side projects, startups, or ventures', profileKey: 'sideProjectsStartupsVentures', inputType: 'textarea' },
+  { key: 'Looking for co-founders / collaborators in...', label: 'Looking for co-founders / collaborators in...', profileKey: 'lookingForCoFoundersCollaboratorsIn', inputType: 'textarea' },
+  { key: "Clubs you're interested in..", label: "Clubs you're interested in..", profileKey: 'clubsInterestedIn', inputType: 'textarea' },
+  { key: 'Willing to host a class event in your city', label: 'Willing to host a class event in your city', profileKey: 'willingToHostClassEventInYourCity' },
+  { key: 'Willing to be a guest speaker for a club', label: 'Willing to be a guest speaker for a club', profileKey: 'willingToBeGuestSpeakerForClub' },
+  { key: 'Password', label: 'Password', inputType: 'password', required: true, accountOnly: true },
+];
+
+export const publicBioBookFields = bioBookRegistrationFields.filter((field) => field.profileKey && !field.accountOnly);
+
+export function bioBookProfileToRegistration(
+  values: Record<string, string | boolean>,
+): RegistrationRequest {
+  const fullName = String(values['Full legal name'] ?? '').trim();
+  const [firstName = '', ...lastNameParts] = fullName.split(/\s+/);
+  const currentCity = String(values['Current City of Residence'] ?? '').trim();
+  const [city, ...stateParts] = currentCity.split(',').map((part) => part.trim());
+  const cohortValue = String(values.Cohort ?? 'Philadelphia');
+  const bio = String(values['Career trajectory in 3 bullets'] || values['I can help classmates with...'] || 'New Wharton Executive MBA alumni profile.');
+
+  return {
+    email: String(values['Work email'] ?? '').trim(),
+    password: String(values.Password ?? ''),
+    firstName,
+    lastName: lastNameParts.join(' ') || firstName,
+    phoneNumber: 'Not provided',
+    cohortCampus: cohortValue === 'SF' ? 'San Francisco' : cohortValue === 'Global' ? 'Global' : 'Philadelphia',
+    classYear: 2028,
+    currentTitle: String(values['Current title / role'] ?? ''),
+    currentCompany: String(values['Current employer'] ?? ''),
+    industry: String(values.Industry ?? 'Technology'),
+    city: city || currentCity,
+    stateCountry: stateParts.join(', ') || '',
+    linkedinUrl: String(values['LinkedIn URL'] ?? ''),
+    bio,
+    willingToMentor: Boolean(values['Open to mentoring']),
+    hiring: false,
+  };
+}

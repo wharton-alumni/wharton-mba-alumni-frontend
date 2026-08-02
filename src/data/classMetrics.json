@@ -1,0 +1,108 @@
+{
+  "WEMBA'52": {
+    "batch": "WEMBA'52",
+    "source": "Wharton Executive MBA Class Profile",
+    "sourceUrl": "https://executivemba.wharton.upenn.edu/class-profile/",
+    "officialClassLabel": "Class of 2028",
+    "overview": "Wharton EMBA students are high-achieving professionals from diverse industries who earn the Wharton MBA while working full-time and advancing their careers.",
+    "stats": [
+      { "label": "Total Class Size", "value": "256" },
+      { "label": "Average Age", "value": "37" },
+      { "label": "U.S. Underrepresented Minority Students", "value": "16%" },
+      { "label": "Countries Represented", "value": "38" },
+      { "label": "Women", "value": "33%" },
+      { "label": "U.S. Students of Color", "value": "53%" }
+    ],
+    "cohorts": [
+      { "label": "Philadelphia", "count": 131, "share": 51, "color": "#026CB5" },
+      { "label": "San Francisco", "count": 78, "share": 30, "color": "#990000" },
+      { "label": "Global", "count": 47, "share": 18, "color": "#96227D" }
+    ],
+    "workExperience": {
+      "averageYears": "13-14",
+      "minimumYears": 8,
+      "medianSalaryAndBonus": "$232,000"
+    },
+    "testScores": [
+      { "label": "Average GMAT", "value": "719" },
+      { "label": "Average GMAT Focus", "value": "660" },
+      { "label": "Average EA", "value": "155" }
+    ],
+    "industryMix": [],
+    "notes": [
+      "Underrepresented minority data represents U.S. citizens and permanent residents only.",
+      "Students of color data represents U.S. citizens and permanent residents only."
+    ]
+  },
+  "WEMBA'51": {
+    "batch": "WEMBA'51",
+    "source": "Menlo Coaching Wharton EMBA Class Profile, citing Wharton EMBA program webpages",
+    "sourceUrl": "https://menlocoaching.com/top-emba-programs/wharton-emba/",
+    "officialClassLabel": "Class of 2027",
+    "overview": "Class profile metrics for Wharton EMBA Class of 2027, including cohort size, testing, demographic, work-experience, compensation, degree, and industry data.",
+    "stats": [
+      { "label": "Total Class Size", "value": "274" },
+      { "label": "Average Age", "value": "38" },
+      { "label": "U.S. Underrepresented Minority Students", "value": "17%" },
+      { "label": "Countries Represented", "value": "46" },
+      { "label": "Women", "value": "27%" },
+      { "label": "Students Holding Advanced Degrees", "value": "48%" }
+    ],
+    "cohorts": [
+      { "label": "Philadelphia", "count": 122, "share": 45, "color": "#026CB5" },
+      { "label": "San Francisco", "count": 104, "share": 38, "color": "#990000" },
+      { "label": "Global", "count": 48, "share": 18, "color": "#96227D" }
+    ],
+    "workExperience": {
+      "averageYears": "13",
+      "minimumYears": 8,
+      "medianSalaryAndBonus": "$237,000"
+    },
+    "testScores": [
+      { "label": "Average GMAT", "value": "706" },
+      { "label": "GMAT Middle 80%", "value": "680-760" },
+      { "label": "Average GMAT Focus", "value": "652" },
+      { "label": "GMAT Focus Middle 80%", "value": "615-715" },
+      { "label": "Average EA", "value": "156" },
+      { "label": "EA Middle 80%", "value": "151-163" }
+    ],
+    "industryMix": [
+      { "label": "Finance", "value": "18%" },
+      { "label": "Technology", "value": "16%" },
+      { "label": "Health Care", "value": "16%" },
+      { "label": "Other", "value": "9%" },
+      { "label": "Social Impact / Govt / Military", "value": "7%" },
+      { "label": "Manufacturing / Supply Chain / Logistics", "value": "6%" }
+    ],
+    "notes": [
+      "The source states this is a profile of the Wharton EMBA Class of 2027 and that data was retrieved from Wharton EMBA program webpages unless otherwise stated."
+    ]
+  },
+  "WEMBA'50": {
+    "batch": "WEMBA'50",
+    "source": "Wharton Magazine: 50 Years of Wharton's Executive MBA Program",
+    "sourceUrl": "https://magazine.wharton.upenn.edu/issues/spring-summer-2026/50-years-of-wharton-executive-mba-program/",
+    "officialClassLabel": "Class of 2026",
+    "overview": "Wharton Magazine's 50-year WEMBA feature identifies the Class of 2026 as WEMBA 50 and publishes a concise By the Numbers profile.",
+    "stats": [
+      { "label": "Average Age", "value": "37" },
+      { "label": "Countries Represented", "value": "43" },
+      { "label": "Students Holding Advanced Degrees", "value": "52%" }
+    ],
+    "cohorts": [
+      { "label": "Philadelphia", "count": 124, "share": 54, "color": "#026CB5" },
+      { "label": "San Francisco", "count": 107, "share": 46, "color": "#990000" }
+    ],
+    "workExperience": {
+      "averageYears": "13",
+      "minimumYears": 8,
+      "medianSalaryAndBonus": ""
+    },
+    "testScores": [],
+    "industryMix": [],
+    "notes": [
+      "Wharton Magazine publishes WEMBA 50 average age, average years of work experience, countries represented, and advanced-degree percentage.",
+      "The same feature lists Philadelphia and San Francisco class-year counts; it does not publish a WEMBA 50 Global cohort count in the By the Numbers section."
+    ]
+  }
+}
