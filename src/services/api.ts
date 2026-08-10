@@ -184,10 +184,9 @@ async function request<T = unknown>(
 
   if (!response.ok) {
     const message = await response.text();
-    if (response.status === 401) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('wharton.profile');
-      localStorage.removeItem('wharton.biobookProfile');
+    if (response.status === 401 || response.status === 403) {
+      clearSession();
+      redirectToLogin();
     }
     throw new Error(message || `Request failed with ${response.status}`);
   }
@@ -221,6 +220,18 @@ function persistSession(response: LoginResponse) {
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+function clearSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('wharton.profile');
+  localStorage.removeItem('wharton.biobookProfile');
+}
+
+function redirectToLogin() {
+  if (window.location.pathname !== '/login') {
+    window.location.assign('/login');
+  }
 }
 
 function toUniversityEmail(value: string) {
