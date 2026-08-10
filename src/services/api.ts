@@ -184,7 +184,7 @@ async function request<T = unknown>(
 
   if (!response.ok) {
     const message = await response.text();
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('wharton.profile');
       localStorage.removeItem('wharton.biobookProfile');
