@@ -529,6 +529,18 @@ main {
   margin-bottom: 1.25rem;
 }
 
+.job-detail-panel {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.job-detail-header {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
 .job-icon {
   display: grid;
   place-items: center;

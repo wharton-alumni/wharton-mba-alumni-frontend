@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { BriefcaseBusiness, MapPin, Plus, Search } from 'lucide-react';
+import { BriefcaseBusiness, ExternalLink, MapPin, Plus, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { industries } from '../data/options';
 import { api } from '../services/api';
 import type { JobListing } from '../data/jobs';
@@ -12,10 +13,13 @@ const initialJobForm: Omit<JobListing, 'id' | 'postedBy'> = {
   state: '',
   type: 'Full-time',
   seniority: 'Executive',
+  externalLink: '',
+  applicationLink: '',
   description: '',
 };
 
 export function JobsPage() {
+  const navigate = useNavigate();
   const [allJobs, setAllJobs] = useState<JobListing[]>([]);
   const [search, setSearch] = useState('');
   const [industry, setIndustry] = useState('');
@@ -76,6 +80,7 @@ export function JobsPage() {
             <label>State/Country<input value={jobForm.state} onChange={(event) => setJobForm({ ...jobForm, state: event.target.value })} required /></label>
           </div>
           <label>Type<input value={jobForm.type} onChange={(event) => setJobForm({ ...jobForm, type: event.target.value })} required /></label>
+          <label>Application link<input type="url" value={jobForm.applicationLink ?? ''} onChange={(event) => setJobForm({ ...jobForm, applicationLink: event.target.value })} placeholder="https://..." /></label>
           <label>Description<textarea value={jobForm.description} onChange={(event) => setJobForm({ ...jobForm, description: event.target.value })} required /></label>
           {error && <p className="form-error">{error}</p>}
           <div className="action-stack">
@@ -112,7 +117,16 @@ export function JobsPage() {
         </aside>
         <div className="job-list">
           {jobs.map((job) => (
-            <article className="job-card" key={job.id}>
+            <article
+              className="job-card clickable-card"
+              key={job.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => navigate(`/jobs/${job.id}`)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') navigate(`/jobs/${job.id}`);
+              }}
+            >
               <div className="job-icon"><BriefcaseBusiness size={22} /></div>
               <div>
                 <div className="card-title-row">
@@ -121,8 +135,13 @@ export function JobsPage() {
                 </div>
                 <p className="role-line">{job.company} · {job.seniority}</p>
                 <p className="muted"><MapPin size={15} /> {job.city}, {job.state} · {job.industry}</p>
-                <p>{job.description}</p>
                 <p className="muted">Posted by {job.postedBy}</p>
+                <div className="profile-card-links">
+                  <span className="button ghost compact">View details</span>
+                  {job.applicationLink && (
+                    <span className="button ghost compact"><ExternalLink size={16} /> Application link</span>
+                  )}
+                </div>
               </div>
             </article>
           ))}

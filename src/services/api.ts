@@ -33,6 +33,7 @@ interface BackendJobPost {
   company: string;
   location?: string;
   externalLink?: string;
+  applicationLink?: string;
   description: string;
   postedByName?: string;
   createdAt?: string;
@@ -151,6 +152,16 @@ export const api = {
     return jobs.map((job) => toJobListing(job));
   },
 
+  getJobById: async (id: string): Promise<JobListing | undefined> => {
+    try {
+      const job = await request<BackendJobPost>(`/jobs/${encodeURIComponent(id)}`);
+      return toJobListing(job);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('404')) return undefined;
+      throw error;
+    }
+  },
+
   createJob: async (payload: Omit<JobListing, 'id' | 'postedBy'>): Promise<JobListing> => {
     const location = [payload.city, payload.state].filter(Boolean).join(', ');
     const job = await request<BackendJobPost>('/jobs', {
@@ -158,7 +169,9 @@ export const api = {
       body: JSON.stringify({
         title: payload.title,
         company: payload.company,
-        location,
+        location: location || null,
+        externalLink: payload.externalLink || null,
+        applicationLink: payload.applicationLink || null,
         description: payload.description,
       }),
     });
@@ -187,6 +200,7 @@ async function request<T = unknown>(
     if (response.status === 401 || response.status === 403) {
       clearSession();
       redirectToLogin();
+      throw new Error('Please login again, your session has expired.');
     }
     throw new Error(message || `Request failed with ${response.status}`);
   }
@@ -250,6 +264,8 @@ function toJobListing(job: BackendJobPost, fallback?: Partial<JobListing>): JobL
     state,
     type: fallback?.type ?? 'Full-time',
     seniority: fallback?.seniority ?? 'Executive',
+    externalLink: job.externalLink ?? fallback?.externalLink,
+    applicationLink: job.applicationLink ?? fallback?.applicationLink,
     description: job.description,
     postedBy: job.postedByName ?? 'Wharton Alumni',
   };

@@ -8,6 +8,8 @@ export interface JobListing {
   type: string;
   seniority: string;
   postedBy: string;
+  externalLink?: string;
+  applicationLink?: string;
   description: string;
 }
 

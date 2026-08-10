@@ -7,6 +7,7 @@ import { DirectoryPage } from './pages/DirectoryPage';
 import { DirectoryProfilePage } from './pages/DirectoryProfilePage';
 import { EventFormPage } from './pages/EventFormPage';
 import { EventsPage } from './pages/EventsPage';
+import { JobDetailPage } from './pages/JobDetailPage';
 import { JobsPage } from './pages/JobsPage';
 import { AnnouncementPage } from './pages/AnnouncementPage';
 import { LoginPage } from './pages/LoginPage';
@@ -60,6 +61,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <JobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="jobs/:jobId"
+            element={
+              <ProtectedRoute>
+                <JobDetailPage />
               </ProtectedRoute>
             }
           />
