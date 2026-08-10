@@ -36,6 +36,13 @@ export function LoginPage() {
         return;
       }
       setMatchedProfile(result.profile);
+      if (result.alreadyClaimed) {
+        setPassword('');
+        setConfirmPassword('');
+        setError('This profile has already been claimed. Please enter your existing password.');
+        setStage('signin');
+        return;
+      }
       setModal({
         title: 'Consent to store profile data',
         body: 'The profile can be prefilled from WEMBA 52 BioBook data. By continuing, you consent to storing this account and profile data for the alumni portal experience.',

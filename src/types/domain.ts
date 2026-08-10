@@ -101,6 +101,7 @@ export interface BioBookProfile {
 
 export interface BioBookLookupResponse {
   exists: boolean;
+  alreadyClaimed?: boolean;
   profile?: BioBookProfile;
 }
 
