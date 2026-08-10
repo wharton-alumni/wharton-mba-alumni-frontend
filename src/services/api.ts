@@ -197,12 +197,12 @@ async function request<T = unknown>(
 
   if (!response.ok) {
     const message = await response.text();
-    if (response.status === 401 || response.status === 403) {
+    if (!options.skipAuth && (response.status === 401 || response.status === 403)) {
       clearSession();
       redirectToLogin();
       throw new Error('Please login again, your session has expired.');
     }
-    throw new Error(message || `Request failed with ${response.status}`);
+    throw new ApiError(response.status, message || `Request failed with ${response.status}`);
   }
 
   if (response.status === 204) {
@@ -210,6 +210,13 @@ async function request<T = unknown>(
   }
 
   return response.json() as Promise<T>;
+}
+
+export class ApiError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
 async function flushPendingConsent() {

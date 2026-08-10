@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { ApiError, api } from '../services/api';
 import { useAuth } from '../components/AuthContext';
 import { brandAssets, brandCopy } from '../data/brand';
 import type { BioBookProfile } from '../types/domain';
@@ -65,6 +65,13 @@ export function LoginPage() {
       localStorage.setItem('wharton.biobookProfile', JSON.stringify(session.biobookProfile));
       navigate('/claim-profile');
     } catch (err) {
+      if (err instanceof ApiError && (err.status === 409 || err.status === 403)) {
+        setError('This profile has already been claimed. Please log in with your existing password.');
+        setPassword('');
+        setConfirmPassword('');
+        setStage('signin');
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Unable to claim your BioBook profile.');
     } finally {
       setLoading(false);
