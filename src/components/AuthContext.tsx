@@ -11,8 +11,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const storedProfile = localStorage.getItem('wharton.profile');
-const storedToken = localStorage.getItem('wharton.token');
+const storedToken = sanitizeStoredToken(localStorage.getItem('wharton.token'));
+const storedProfile = storedToken ? localStorage.getItem('wharton.profile') : null;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AlumniProfile | null>(
@@ -54,4 +54,14 @@ export function useAuth() {
     throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
+}
+
+function sanitizeStoredToken(token: string | null) {
+  if (!token || token.startsWith('local-token-') || !token.includes('.')) {
+    localStorage.removeItem('wharton.token');
+    localStorage.removeItem('wharton.profile');
+    localStorage.removeItem('wharton.biobookProfile');
+    return null;
+  }
+  return token;
 }

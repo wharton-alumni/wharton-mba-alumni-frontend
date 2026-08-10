@@ -22,6 +22,7 @@ export function JobsPage() {
   const [location, setLocation] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [jobForm, setJobForm] = useState(initialJobForm);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     api.getJobs().then(setAllJobs);
@@ -40,10 +41,15 @@ export function JobsPage() {
 
   async function handleCreateJob(event: FormEvent) {
     event.preventDefault();
-    const created = await api.createJob(jobForm);
-    setAllJobs((current) => [created, ...current]);
-    setJobForm(initialJobForm);
-    setShowForm(false);
+    setError('');
+    try {
+      const created = await api.createJob(jobForm);
+      setAllJobs((current) => [created, ...current]);
+      setJobForm(initialJobForm);
+      setShowForm(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Please log in again before posting a job.');
+    }
   }
 
   return (
@@ -71,6 +77,7 @@ export function JobsPage() {
           </div>
           <label>Type<input value={jobForm.type} onChange={(event) => setJobForm({ ...jobForm, type: event.target.value })} required /></label>
           <label>Description<textarea value={jobForm.description} onChange={(event) => setJobForm({ ...jobForm, description: event.target.value })} required /></label>
+          {error && <p className="form-error">{error}</p>}
           <div className="action-stack">
             <button className="button primary">Create job</button>
             <button type="button" className="button ghost" onClick={() => setShowForm(false)}>Cancel</button>

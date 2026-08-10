@@ -184,6 +184,11 @@ async function request<T = unknown>(
 
   if (!response.ok) {
     const message = await response.text();
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('wharton.profile');
+      localStorage.removeItem('wharton.biobookProfile');
+    }
     throw new Error(message || `Request failed with ${response.status}`);
   }
 
