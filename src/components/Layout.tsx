@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, CalendarDays, LogOut, Search, ShieldCheck, UserRound } from 'lucide-react';
+import { Bell, BriefcaseBusiness, CalendarDays, LogOut, Search, ShieldCheck, UserRound } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { brandAssets, brandCopy } from '../data/brand';
@@ -7,6 +7,7 @@ const links = [
   { to: '/directory', label: 'Directory', icon: Search },
   { to: '/events', label: 'Events', icon: CalendarDays },
   { to: '/jobs', label: 'Job Listing', icon: BriefcaseBusiness },
+  { to: '/announcement', label: 'Announcement', icon: Bell },
   { to: '/profile', label: 'Profile', icon: UserRound },
 ];
 

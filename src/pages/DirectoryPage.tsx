@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ExternalLink, Search } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { cohorts, industries } from '../data/options';
 import { brandAssets, brandCopy } from '../data/brand';
 import { olderBatches, topBatches } from '../data/batches';
 import classMetrics from '../data/classMetrics.json';
-import { demoDirectoryProfiles } from '../data/demoDirectoryProfiles';
-import type { DirectoryFilters } from '../services/api';
+import { api, type DirectoryFilters } from '../services/api';
 import type { BioBookProfile } from '../types/domain';
 
 type DirectoryTab = 'dashboard' | 'directory';
@@ -42,15 +42,19 @@ interface ClassMetrics {
 const metricsByBatch = classMetrics as Record<string, ClassMetrics>;
 
 export function DirectoryPage() {
-  const [wemba52Profiles] = useState<BioBookProfile[]>(demoDirectoryProfiles);
+  const [wemba52Profiles, setWemba52Profiles] = useState<BioBookProfile[]>([]);
   const [filters, setFilters] = useState<DirectoryFilters>({});
   const [selectedBatch, setSelectedBatch] = useState("WEMBA'52");
   const [activeTab, setActiveTab] = useState<DirectoryTab>('dashboard');
 
+  useEffect(() => {
+    api.getBioBookProfiles().then(setWemba52Profiles);
+  }, []);
+
   const directoryProfiles = useMemo(() => {
     if (selectedBatch !== "WEMBA'52") return [];
     return wemba52Profiles.filter((profile) => matchesBioBookFilters(profile, filters));
-  }, [filters, selectedBatch]);
+  }, [filters, selectedBatch, wemba52Profiles]);
   const bioBookIndustries = useMemo(() => {
     const fromBioBook = new Set(wemba52Profiles.map((profile) => profile.industry).filter(Boolean));
     return Array.from(new Set([...industries, ...fromBioBook])).sort();
@@ -138,9 +142,18 @@ export function DirectoryPage() {
 }
 
 function BioBookProfileCard({ profile }: { profile: BioBookProfile }) {
+  const navigate = useNavigate();
   const initials = initialsFor(profile.fullLegalName);
   return (
-    <article className="profile-card biobook-card">
+    <article
+      className="profile-card biobook-card clickable-card"
+      role="link"
+      tabIndex={0}
+      onClick={() => navigate(`/directory/${profile.id}`)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') navigate(`/directory/${profile.id}`);
+      }}
+    >
       <div className="avatar">{initials}</div>
       <div>
         <div className="card-title-row">
@@ -157,7 +170,8 @@ function BioBookProfileCard({ profile }: { profile: BioBookProfile }) {
           {profile.majors && <span className="badge green">{profile.majors}</span>}
         </div>
         <div className="profile-card-links">
-          {profile.linkedinUrl && <a className="button ghost compact" href={normalizeUrl(profile.linkedinUrl)} target="_blank" rel="noreferrer"><ExternalLink size={16} /> LinkedIn</a>}
+          <span className="button ghost compact">View profile</span>
+          {profile.linkedinUrl && <a className="button ghost compact" href={normalizeUrl(profile.linkedinUrl)} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}><ExternalLink size={16} /> LinkedIn</a>}
         </div>
       </div>
     </article>

@@ -55,6 +55,7 @@ export interface LoginResponse {
 export interface BioBookProfile {
   id: string;
   batch: string;
+  universityEmailAlias?: string;
   fullLegalName: string;
   preferredNameNickname: string;
   pronouns: string;
@@ -105,6 +106,11 @@ export interface BioBookLookupResponse {
 
 export interface BioBookClaimResponse extends LoginResponse {
   biobookProfile: BioBookProfile;
+}
+
+export interface PasswordResetResponse {
+  sent: boolean;
+  destination: string;
 }
 
 export type RegistrationRequest = Omit<

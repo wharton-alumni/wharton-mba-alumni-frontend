@@ -1,30 +1,82 @@
-import { useMemo, useState } from 'react';
-import { BriefcaseBusiness, MapPin, Search } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { BriefcaseBusiness, MapPin, Plus, Search } from 'lucide-react';
 import { industries } from '../data/options';
-import { jobListings } from '../data/jobs';
+import { api } from '../services/api';
+import type { JobListing } from '../data/jobs';
+
+const initialJobForm: Omit<JobListing, 'id' | 'postedBy'> = {
+  title: '',
+  company: '',
+  industry: 'Technology',
+  city: '',
+  state: '',
+  type: 'Full-time',
+  seniority: 'Executive',
+  description: '',
+};
 
 export function JobsPage() {
+  const [allJobs, setAllJobs] = useState<JobListing[]>([]);
   const [search, setSearch] = useState('');
   const [industry, setIndustry] = useState('');
   const [location, setLocation] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [jobForm, setJobForm] = useState(initialJobForm);
+
+  useEffect(() => {
+    api.getJobs().then(setAllJobs);
+  }, []);
 
   const jobs = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
     const normalizedLocation = location.trim().toLowerCase();
-    return jobListings.filter((job) => {
+    return allJobs.filter((job) => {
       const matchesSearch = !normalizedSearch || job.title.toLowerCase().includes(normalizedSearch);
       const matchesIndustry = !industry || job.industry === industry;
       const matchesLocation = !normalizedLocation || `${job.city} ${job.state}`.toLowerCase().includes(normalizedLocation);
       return matchesSearch && matchesIndustry && matchesLocation;
     });
-  }, [industry, location, search]);
+  }, [allJobs, industry, location, search]);
+
+  async function handleCreateJob(event: FormEvent) {
+    event.preventDefault();
+    const created = await api.createJob(jobForm);
+    setAllJobs((current) => [created, ...current]);
+    setJobForm(initialJobForm);
+    setShowForm(false);
+  }
 
   return (
     <section className="content">
-      <div className="section-heading">
-        <p className="eyebrow">Job listings</p>
-        <h1>Executive opportunities from the Wharton EMBA network</h1>
+      <div className="page-actions">
+        <div className="section-heading">
+          <p className="eyebrow">Job listings</p>
+          <h1>Executive opportunities from the Wharton EMBA network</h1>
+        </div>
+        <button className="button primary" onClick={() => setShowForm((current) => !current)}><Plus size={18} /> Post a job</button>
       </div>
+      {showForm && (
+        <form className="panel form-grid job-form-panel" onSubmit={handleCreateJob}>
+          <div className="field-row">
+            <label>Job title<input value={jobForm.title} onChange={(event) => setJobForm({ ...jobForm, title: event.target.value })} required /></label>
+            <label>Company<input value={jobForm.company} onChange={(event) => setJobForm({ ...jobForm, company: event.target.value })} required /></label>
+          </div>
+          <div className="field-row">
+            <label>Industry<select value={jobForm.industry} onChange={(event) => setJobForm({ ...jobForm, industry: event.target.value })}>{industries.map((option) => <option key={option}>{option}</option>)}</select></label>
+            <label>Seniority<input value={jobForm.seniority} onChange={(event) => setJobForm({ ...jobForm, seniority: event.target.value })} required /></label>
+          </div>
+          <div className="field-row">
+            <label>City<input value={jobForm.city} onChange={(event) => setJobForm({ ...jobForm, city: event.target.value })} required /></label>
+            <label>State/Country<input value={jobForm.state} onChange={(event) => setJobForm({ ...jobForm, state: event.target.value })} required /></label>
+          </div>
+          <label>Type<input value={jobForm.type} onChange={(event) => setJobForm({ ...jobForm, type: event.target.value })} required /></label>
+          <label>Description<textarea value={jobForm.description} onChange={(event) => setJobForm({ ...jobForm, description: event.target.value })} required /></label>
+          <div className="action-stack">
+            <button className="button primary">Create job</button>
+            <button type="button" className="button ghost" onClick={() => setShowForm(false)}>Cancel</button>
+          </div>
+        </form>
+      )}
       <div className="directory-layout">
         <aside className="filters panel">
           <label className="search-field">

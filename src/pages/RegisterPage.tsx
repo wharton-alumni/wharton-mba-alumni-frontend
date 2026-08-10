@@ -21,8 +21,11 @@ function buildInitialForm(email = ''): RegistrationFormState {
 
 export function RegisterPage() {
   const location = useLocation();
-  const redirectedEmail = (location.state as { email?: string } | null)?.email ?? '';
+  const redirectedState = location.state as { email?: string; showConsent?: boolean } | null;
+  const redirectedEmail = redirectedState?.email ?? '';
   const [form, setForm] = useState<RegistrationFormState>(() => buildInitialForm(redirectedEmail));
+  const [consented, setConsented] = useState(!redirectedState?.showConsent);
+  const [showConsent, setShowConsent] = useState(Boolean(redirectedState?.showConsent));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { setSession } = useAuth();
@@ -34,6 +37,10 @@ export function RegisterPage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!consented) {
+      setShowConsent(true);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -68,6 +75,28 @@ export function RegisterPage() {
         {error && <p className="form-error">{error}</p>}
         <button className="button primary" disabled={loading}>{loading ? 'Creating...' : 'Create profile'}</button>
       </form>
+      {showConsent && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="panel modal-panel">
+            <p className="eyebrow">Consent</p>
+            <h2>Store profile data</h2>
+            <p>The portal will store the submitted account and profile details for authentication, profile management, directory access, and alumni networking features.</p>
+            <div className="action-stack">
+              <button
+                className="button primary"
+                onClick={async () => {
+                  await api.recordConsent(String(form['Work email'] ?? ''), 'manual-registration');
+                  setConsented(true);
+                  setShowConsent(false);
+                }}
+              >
+                I consent
+              </button>
+              <button className="button ghost" onClick={() => setShowConsent(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

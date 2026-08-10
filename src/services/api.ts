@@ -1,58 +1,20 @@
-import seedAlumniProfiles from '../data/seedAlumniProfiles.json';
-import seedEvents from '../data/seedEvents.json';
+import type { JobListing } from '../data/jobs';
 import type {
   AlumniEvent,
   AlumniProfile,
   BioBookClaimResponse,
   BioBookLookupResponse,
-  CohortCampus,
+  BioBookProfile,
   EventStatus,
   LoginResponse,
+  PasswordResetResponse,
   RegistrationRequest,
-  Role,
 } from '../types/domain';
 
-const ACCOUNTS_KEY = 'wharton.localAccounts';
-const EVENTS_KEY = 'wharton.localEvents';
-
-interface LocalAccount {
-  email: string;
-  password: string;
-  profile: AlumniProfile;
-}
-
-interface SeedAlumniProfile {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  cohortCampus: CohortCampus;
-  classYear: number;
-  currentTitle: string;
-  currentCompany: string;
-  industry: string;
-  city: string;
-  stateCountry: string;
-  linkedinUrl?: string;
-  bio: string;
-  willingToMentor: boolean;
-  hiring: boolean;
-  avatarUrl?: string;
-  role: Role;
-  approved: boolean;
-}
-
-interface SeedEvent {
-  title: string;
-  description: string;
-  category: AlumniEvent['category'];
-  eventDate?: string | null;
-  location: string;
-  externalLink?: string;
-  imageUrl?: string;
-  postedByEmail: string;
-  status: EventStatus;
-}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.whartonemba.com/api';
+const TOKEN_KEY = 'wharton.token';
+const PENDING_CONSENT_KEY = 'wharton.pendingConsent';
+const UNIVERSITY_DOMAIN = 'wharton.upenn.edu';
 
 export interface DirectoryFilters {
   search?: string;
@@ -65,218 +27,214 @@ export interface DirectoryFilters {
   hiring?: boolean;
 }
 
+interface BackendJobPost {
+  id: string;
+  title: string;
+  company: string;
+  location?: string;
+  externalLink?: string;
+  description: string;
+  postedByName?: string;
+  createdAt?: string;
+}
+
 export const api = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
-    const account = getAccounts().find((item) => item.email === normalizeEmail(email));
-    if (!account || account.password !== password) {
-      throw new Error('Invalid email or password.');
-    }
-    return toSession(account.profile);
+    const response = await request<LoginResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: toUniversityEmail(email), password }),
+      skipAuth: true,
+    });
+    persistSession(response);
+    await flushPendingConsent();
+    return response;
   },
 
   register: async (payload: RegistrationRequest): Promise<LoginResponse> => {
-    const accounts = getAccounts();
-    const email = normalizeEmail(payload.email);
-    if (accounts.some((account) => account.email === email)) {
-      throw new Error('An alumni profile already exists for that email.');
-    }
-
-    const profile: AlumniProfile = {
-      id: crypto.randomUUID(),
-      email,
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-      phoneNumber: payload.phoneNumber,
-      cohortCampus: payload.cohortCampus,
-      classYear: payload.classYear,
-      currentTitle: payload.currentTitle,
-      currentCompany: payload.currentCompany,
-      industry: payload.industry,
-      city: payload.city,
-      stateCountry: payload.stateCountry,
-      linkedinUrl: payload.linkedinUrl,
-      bio: payload.bio,
-      willingToMentor: payload.willingToMentor,
-      hiring: payload.hiring,
-      avatarUrl: payload.avatarUrl,
-      role: 'ALUMNI',
-      approved: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    saveAccounts([...accounts, { email, password: payload.password, profile }]);
-    return toSession(profile);
+    const response = await request<LoginResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, email: toUniversityEmail(payload.email) }),
+      skipAuth: true,
+    });
+    persistSession(response);
+    await flushPendingConsent();
+    return response;
   },
 
-  lookupBioBook: async (email: string): Promise<BioBookLookupResponse> => {
-    void email;
-    return { exists: false };
+  lookupBioBook: async (email: string): Promise<BioBookLookupResponse> =>
+    request<BioBookLookupResponse>('/auth/biobook/lookup', {
+      method: 'POST',
+      body: JSON.stringify({ email: toUniversityEmail(email) }),
+      skipAuth: true,
+    }),
+
+  recordConsent: async (email: string, source: string): Promise<void> => {
+    const consentText = `Consent accepted for ${source} by ${toUniversityEmail(email)}.`;
+    if (!getToken()) {
+      sessionStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify({ consentText }));
+      return;
+    }
+    await request('/consents', {
+      method: 'POST',
+      body: JSON.stringify({ consentText }),
+    });
+  },
+
+  sendPasswordReset: async (email: string): Promise<PasswordResetResponse> => {
+    await request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: toUniversityEmail(email) }),
+      skipAuth: true,
+    });
+    return {
+      sent: true,
+      destination: toUniversityEmail(email),
+    };
   },
 
   claimBioBook: async (email: string, password: string): Promise<BioBookClaimResponse> => {
-    void email;
-    void password;
-    throw new Error('BioBook claiming requires a secure backend and is disabled in frontend-only mode.');
+    const response = await request<BioBookClaimResponse>('/auth/biobook/claim', {
+      method: 'POST',
+      body: JSON.stringify({ email: toUniversityEmail(email), password }),
+      skipAuth: true,
+    });
+    persistSession(response);
+    await flushPendingConsent();
+    return response;
   },
 
-  updateProfile: async (id: string, payload: Partial<AlumniProfile>): Promise<AlumniProfile> => {
-    const accounts = getAccounts();
-    const index = accounts.findIndex((account) => account.profile.id === id);
-    if (index === -1) {
-      const currentProfile = getCurrentProfile();
-      if (!currentProfile || currentProfile.id !== id) {
-        throw new Error('Profile not found.');
-      }
-      const updated = { ...currentProfile, ...payload, id };
-      saveAccounts([...accounts, { email: normalizeEmail(updated.email), password: '', profile: updated }]);
-      localStorage.setItem('wharton.profile', JSON.stringify(updated));
-      return updated;
+  getBioBookProfiles: async (): Promise<BioBookProfile[]> => request<BioBookProfile[]>('/biobook/profiles'),
+
+  getBioBookProfileById: async (id: string): Promise<BioBookProfile | undefined> => {
+    try {
+      return await request<BioBookProfile>(`/biobook/profiles/${encodeURIComponent(id)}`);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('404')) return undefined;
+      throw error;
     }
-    const updated = { ...accounts[index].profile, ...payload, id };
-    accounts[index] = { ...accounts[index], profile: updated };
-    saveAccounts(accounts);
-    localStorage.setItem('wharton.profile', JSON.stringify(updated));
-    return updated;
   },
 
-  getProfiles: async (filters: DirectoryFilters = {}): Promise<AlumniProfile[]> =>
-    getAccounts()
-      .map((account) => account.profile)
-      .filter((profile) => profile.approved)
-      .filter((profile) => matchesProfileFilters(profile, filters))
-      .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)),
+  updateProfile: async (_id: string, payload: Partial<AlumniProfile>): Promise<AlumniProfile> =>
+    request<AlumniProfile>('/profiles/me', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
+  getProfiles: async (filters: DirectoryFilters = {}): Promise<AlumniProfile[]> => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== '' && value !== false) {
+        params.set(key, String(value));
+      }
+    });
+    const query = params.toString();
+    return request<AlumniProfile[]>(`/profiles${query ? `?${query}` : ''}`);
+  },
 
   getEvents: async (status: EventStatus = 'APPROVED'): Promise<AlumniEvent[]> =>
-    getEvents()
-      .filter((event) => event.status === status)
-      .sort((a, b) => (a.eventDate ?? '').localeCompare(b.eventDate ?? '')),
+    request<AlumniEvent[]>(`/events?status=${encodeURIComponent(status)}`),
 
-  submitEvent: async (payload: Partial<AlumniEvent>): Promise<AlumniEvent> => {
-    const currentProfile = getCurrentProfile();
-    const event: AlumniEvent = {
-      id: crypto.randomUUID(),
-      title: payload.title ?? '',
-      description: payload.description ?? '',
-      category: payload.category ?? 'Networking',
-      eventDate: payload.eventDate,
-      location: payload.location ?? '',
-      externalLink: payload.externalLink,
-      imageUrl: payload.imageUrl,
-      postedById: currentProfile?.id ?? payload.postedById ?? 'local-user',
-      postedByName: currentProfile ? `${currentProfile.firstName} ${currentProfile.lastName}` : 'Wharton Alumni',
-      postedByCohort: currentProfile?.cohortCampus ?? 'Philadelphia',
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-    };
-    saveEvents([...getEvents(), event]);
-    return event;
+  submitEvent: async (payload: Partial<AlumniEvent>): Promise<AlumniEvent> =>
+    request<AlumniEvent>('/events', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  moderateEvent: async (id: string, status: EventStatus): Promise<AlumniEvent> =>
+    request<AlumniEvent>(`/admin/events/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+
+  getJobs: async (): Promise<JobListing[]> => {
+    const jobs = await request<BackendJobPost[]>('/jobs');
+    return jobs.map((job) => toJobListing(job));
   },
 
-  moderateEvent: async (id: string, status: EventStatus): Promise<AlumniEvent> => {
-    const events = getEvents();
-    const index = events.findIndex((event) => event.id === id);
-    if (index === -1) {
-      throw new Error('Event not found.');
-    }
-    const updated = { ...events[index], status };
-    events[index] = updated;
-    saveEvents(events);
-    return updated;
+  createJob: async (payload: Omit<JobListing, 'id' | 'postedBy'>): Promise<JobListing> => {
+    const location = [payload.city, payload.state].filter(Boolean).join(', ');
+    const job = await request<BackendJobPost>('/jobs', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: payload.title,
+        company: payload.company,
+        location,
+        description: payload.description,
+      }),
+    });
+    return toJobListing(job, payload);
   },
 };
 
-function getAccounts(): LocalAccount[] {
-  const stored = localStorage.getItem(ACCOUNTS_KEY);
-  if (stored) return JSON.parse(stored) as LocalAccount[];
+async function request<T = unknown>(
+  path: string,
+  options: RequestInit & { skipAuth?: boolean } = {},
+): Promise<T> {
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
+  if (!options.skipAuth) {
+    const token = getToken();
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+  }
 
-  const seeded = (seedAlumniProfiles as SeedAlumniProfile[]).map((profile, index) => {
-    const alumniProfile = seedProfileToAlumniProfile(profile, index);
-    return {
-      email: normalizeEmail(profile.email),
-      password: 'password',
-      profile: alumniProfile,
-    };
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
   });
-  saveAccounts(seeded);
-  return seeded;
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Request failed with ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json() as Promise<T>;
 }
 
-function saveAccounts(accounts: LocalAccount[]) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+async function flushPendingConsent() {
+  const stored = sessionStorage.getItem(PENDING_CONSENT_KEY);
+  if (!stored || !getToken()) return;
+  sessionStorage.removeItem(PENDING_CONSENT_KEY);
+  try {
+    const pending = JSON.parse(stored) as { consentText: string };
+    await request('/consents', {
+      method: 'POST',
+      body: JSON.stringify({ consentText: pending.consentText }),
+    });
+  } catch {
+    sessionStorage.setItem(PENDING_CONSENT_KEY, stored);
+  }
 }
 
-function getEvents(): AlumniEvent[] {
-  const stored = localStorage.getItem(EVENTS_KEY);
-  if (stored) return JSON.parse(stored) as AlumniEvent[];
-
-  const profiles = getAccounts().map((account) => account.profile);
-  const seeded = (seedEvents as SeedEvent[]).map((event, index) => {
-    const poster = profiles.find((profile) => profile.email === normalizeEmail(event.postedByEmail));
-    return {
-      id: `seed-event-${index + 1}`,
-      title: event.title,
-      description: event.description,
-      category: event.category,
-      eventDate: event.eventDate ?? undefined,
-      location: event.location,
-      externalLink: event.externalLink,
-      imageUrl: event.imageUrl,
-      postedById: poster?.id ?? 'seed-admin',
-      postedByName: poster ? `${poster.firstName} ${poster.lastName}` : 'Wharton Alumni',
-      postedByCohort: poster?.cohortCampus ?? 'Philadelphia',
-      status: event.status,
-      createdAt: new Date(Date.now() - index * 86400000).toISOString(),
-    } satisfies AlumniEvent;
-  });
-  saveEvents(seeded);
-  return seeded;
+function persistSession(response: LoginResponse) {
+  localStorage.setItem(TOKEN_KEY, response.token);
+  localStorage.setItem('wharton.profile', JSON.stringify(response.profile));
 }
 
-function saveEvents(events: AlumniEvent[]) {
-  localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-function getCurrentProfile() {
-  const stored = localStorage.getItem('wharton.profile');
-  return stored ? JSON.parse(stored) as AlumniProfile : null;
+function toUniversityEmail(value: string) {
+  const trimmed = value.trim().toLowerCase();
+  return trimmed.includes('@') ? trimmed : `${trimmed}@${UNIVERSITY_DOMAIN}`;
 }
 
-function seedProfileToAlumniProfile(profile: SeedAlumniProfile, index: number): AlumniProfile {
+function toJobListing(job: BackendJobPost, fallback?: Partial<JobListing>): JobListing {
+  const [city = fallback?.city ?? '', state = fallback?.state ?? ''] = (job.location ?? '').split(',').map((part) => part.trim());
   return {
-    ...profile,
-    id: crypto.randomUUID(),
-    email: normalizeEmail(profile.email),
-    createdAt: new Date(Date.now() - index * 86400000).toISOString(),
+    id: job.id,
+    title: job.title,
+    company: job.company,
+    industry: fallback?.industry ?? 'General Management',
+    city,
+    state,
+    type: fallback?.type ?? 'Full-time',
+    seniority: fallback?.seniority ?? 'Executive',
+    description: job.description,
+    postedBy: job.postedByName ?? 'Wharton Alumni',
   };
-}
-
-function matchesProfileFilters(profile: AlumniProfile, filters: DirectoryFilters) {
-  const search = filters.search?.trim().toLowerCase();
-  if (search && ![
-    profile.firstName,
-    profile.lastName,
-    profile.currentCompany,
-    profile.currentTitle,
-    profile.industry,
-    profile.bio,
-  ].join(' ').toLowerCase().includes(search)) return false;
-  if (filters.cohortCampus && profile.cohortCampus !== filters.cohortCampus) return false;
-  if (filters.industry && profile.industry !== filters.industry) return false;
-  if (filters.location && !`${profile.city} ${profile.stateCountry}`.toLowerCase().includes(filters.location.toLowerCase())) return false;
-  if (filters.classYearFrom && profile.classYear < Number(filters.classYearFrom)) return false;
-  if (filters.classYearTo && profile.classYear > Number(filters.classYearTo)) return false;
-  if (filters.willingToMentor && !profile.willingToMentor) return false;
-  if (filters.hiring && !profile.hiring) return false;
-  return true;
-}
-
-function toSession(profile: AlumniProfile): LoginResponse {
-  return {
-    token: `local-token-${profile.id}`,
-    profile,
-  };
-}
-
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
 }

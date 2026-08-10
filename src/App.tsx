@@ -4,9 +4,11 @@ import { Layout } from './components/Layout';
 import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute';
 import { AdminEventsPage } from './pages/AdminEventsPage';
 import { DirectoryPage } from './pages/DirectoryPage';
+import { DirectoryProfilePage } from './pages/DirectoryProfilePage';
 import { EventFormPage } from './pages/EventFormPage';
 import { EventsPage } from './pages/EventsPage';
 import { JobsPage } from './pages/JobsPage';
+import { AnnouncementPage } from './pages/AnnouncementPage';
 import { LoginPage } from './pages/LoginPage';
 import { ClaimProfilePage } from './pages/ClaimProfilePage';
 import { ProfileEditPage } from './pages/ProfileEditPage';
@@ -26,6 +28,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DirectoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="directory/:profileId"
+            element={
+              <ProtectedRoute>
+                <DirectoryProfilePage />
               </ProtectedRoute>
             }
           />
@@ -50,6 +60,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <JobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="announcement"
+            element={
+              <ProtectedRoute>
+                <AnnouncementPage />
               </ProtectedRoute>
             }
           />
