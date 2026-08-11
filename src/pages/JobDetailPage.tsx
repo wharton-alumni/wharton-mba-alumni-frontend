@@ -60,37 +60,39 @@ export function JobDetailPage() {
           </div>
         </div>
 
-        <div className="badge-row">
-          <span className="badge">{job.type}</span>
-          <span className="badge green">{job.industry}</span>
-          <span className="badge crimson"><MapPin size={14} /> {job.city}, {job.state}</span>
-        </div>
+        <dl className="job-meta-grid">
+          <div>
+            <dt>Company</dt>
+            <dd>{job.company}</dd>
+          </div>
+          <div>
+            <dt>Location</dt>
+            <dd><MapPin size={15} /> {job.city}, {job.state}</dd>
+          </div>
+          <div>
+            <dt>Industry</dt>
+            <dd>{job.industry}</dd>
+          </div>
+          <div>
+            <dt>Seniority</dt>
+            <dd>{job.seniority}</dd>
+          </div>
+          <div>
+            <dt>Employment type</dt>
+            <dd>{job.type}</dd>
+          </div>
+          <div>
+            <dt>Posted by</dt>
+            <dd>{job.postedBy}</dd>
+          </div>
+        </dl>
 
-        <div className="profile-story">
+        <div className="job-description-block">
           <h2>Description</h2>
           <p>{job.description}</p>
         </div>
 
-        <div className="claim-field-grid">
-          <div className="claim-field">
-            <span>Posted by</span>
-            <strong>{job.postedBy}</strong>
-          </div>
-          <div className="claim-field">
-            <span>Company</span>
-            <strong>{job.company}</strong>
-          </div>
-          <div className="claim-field">
-            <span>Seniority</span>
-            <strong>{job.seniority}</strong>
-          </div>
-          <div className="claim-field">
-            <span>Employment type</span>
-            <strong>{job.type}</strong>
-          </div>
-        </div>
-
-        <div className="action-stack">
+        <div className="job-detail-actions">
           {job.applicationLink && (
             <a className="button primary" href={normalizeUrl(job.applicationLink)} target="_blank" rel="noreferrer">
               <ExternalLink size={18} /> Apply
