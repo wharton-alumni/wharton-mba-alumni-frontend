@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
-import { bioBookRegistrationFields } from '../data/biobookFields';
+import { bioBookRegistrationFields, classYearToWembaBatch, wembaBatchToClassYear } from '../data/biobookFields';
 import { cohorts, industries } from '../data/options';
 import { api } from '../services/api';
 import type { AlumniProfile } from '../types/domain';
@@ -153,10 +153,22 @@ function BioBookEditInput({
     );
   }
 
+  if (field.inputType === 'select' && field.options) {
+    return (
+      <label>
+        {field.label}
+        <select value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} required={field.required}>
+          {!value && <option value="">Select one</option>}
+          {field.options.map((option) => <option key={option}>{option}</option>)}
+        </select>
+      </label>
+    );
+  }
+
   return (
     <label className={field.key.length > 42 ? 'wide-field' : undefined}>
       {field.label}
-      <input type={field.inputType ?? 'text'} value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
+      <input type={field.inputType ?? 'text'} value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} required={field.required} />
     </label>
   );
 }
@@ -183,6 +195,7 @@ function syncProfileFromDetails(profile: AlumniProfile, details: EditableDetails
     lastName: lastNameParts.join(' ') || profile.lastName,
     phoneNumber: String(details.mobileNumber || profile.phoneNumber || 'Not provided'),
     cohortCampus: normalizeCohort(String(details.cohortCampus || profile.cohortCampus)),
+    classYear: wembaBatchToClassYear(String(details['WEMBA class'] || classYearToWembaBatch(profile.classYear))),
     currentTitle: String(details.currentTitleRole || profile.currentTitle),
     currentCompany: String(details.currentEmployer || profile.currentCompany),
     industry: String(details.industry || profile.industry),
@@ -198,6 +211,7 @@ function syncProfileFromDetails(profile: AlumniProfile, details: EditableDetails
 function fallbackValue(key: string, profile: AlumniProfile, fullName: string) {
   const values: Record<string, string | boolean> = {
     fullLegalName: fullName,
+    'WEMBA class': classYearToWembaBatch(profile.classYear),
     cohortCampus: profile.cohortCampus,
     currentCityOfResidence: [profile.city, profile.stateCountry].filter(Boolean).join(', '),
     currentEmployer: profile.currentCompany,

@@ -13,7 +13,6 @@ import type {
   OnboardingLookupResponse,
   PasswordResetResponse,
   RegistrationRequest,
-  SendCodeResponse,
 } from '../types/domain';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.whartonemba.com/api';
@@ -81,24 +80,10 @@ export const api = {
       skipAuth: true,
     }),
 
-  sendOnboardingCode: async (email: string): Promise<SendCodeResponse> =>
-    request<SendCodeResponse>('/onboarding/send-code', {
-      method: 'POST',
-      body: JSON.stringify({ email: toClaimEmail(email) }),
-      skipAuth: true,
-    }),
-
-  verifyOnboardingCode: async (email: string, code: string): Promise<void> =>
-    request('/onboarding/verify-code', {
-      method: 'POST',
-      body: JSON.stringify({ email: toClaimEmail(email), code }),
-      skipAuth: true,
-    }),
-
-  claimWithCode: async (email: string, code: string, password: string): Promise<LoginResponse> => {
+  claimOnboarding: async (email: string, password: string): Promise<LoginResponse> => {
     const response = await request<LoginResponse>('/onboarding/claim', {
       method: 'POST',
-      body: JSON.stringify({ email: toClaimEmail(email), code, password }),
+      body: JSON.stringify({ email: toClaimEmail(email), password }),
       skipAuth: true,
     });
     persistSession(response);

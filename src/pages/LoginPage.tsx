@@ -2,14 +2,14 @@ import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api } from '../services/api';
 import { useAuth } from '../components/AuthContext';
+import { PasswordField } from '../components/PasswordField';
 import { brandAssets, brandCopy } from '../data/brand';
 import type { OnboardingLookupResponse } from '../types/domain';
 
-type LoginStage = 'lookup' | 'code' | 'password' | 'signin' | 'forgot';
+type LoginStage = 'lookup' | 'password' | 'signin' | 'forgot';
 
 export function LoginPage() {
   const [identifier, setIdentifier] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [matchedProfile, setMatchedProfile] = useState<OnboardingLookupResponse | null>(null);
@@ -52,28 +52,14 @@ export function LoginPage() {
         title: 'Consent to store profile data',
         body: 'Your profile may be pre-populated with existing alumni details. By continuing, you agree to allow us to store and use your account and profile information to provide you with access to the alumni portal.',
         action: async () => {
-          await api.recordConsent(identifier, 'biobook-code-claim');
-          await api.sendOnboardingCode(identifier);
-          setVerificationCode('');
-          setStage('code');
+          await api.recordConsent(identifier, 'biobook-claim');
+          setPassword('');
+          setConfirmPassword('');
+          setStage('password');
         },
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to verify your BioBook record.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleVerifyCode(event: FormEvent) {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      await api.verifyOnboardingCode(identifier, verificationCode);
-      setStage('password');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to verify that code.');
     } finally {
       setLoading(false);
     }
@@ -88,7 +74,7 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const session = await api.claimWithCode(identifier, verificationCode, password);
+      const session = await api.claimOnboarding(identifier, password);
       if (matchedBioBookProfile) {
         localStorage.setItem('wharton.biobookProfile', matchedBioBookProfile);
       }
@@ -145,7 +131,7 @@ export function LoginPage() {
     <section className="auth-page">
       <form
         className="panel auth-panel"
-        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'password' ? handleClaim : stage === 'code' ? handleVerifyCode : stage === 'forgot' ? handleForgotPassword : handleLookup}
+        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'password' ? handleClaim : stage === 'forgot' ? handleForgotPassword : handleLookup}
       >
         <div>
           <img src={brandAssets.executiveMbaLogo} alt="Wharton Executive MBA" className="auth-lockup" />
@@ -163,8 +149,7 @@ export function LoginPage() {
 
         <p className="muted">
           {stage === 'lookup' && 'Enter the university email username to claim your profile.'}
-          {stage === 'code' && 'Enter the email verification code sent for this BioBook profile.'}
-          {stage === 'password' && 'Create a password to claim the verified prefilled profile.'}
+          {stage === 'password' && 'Create a password to claim the prefilled profile.'}
           {stage === 'signin' && 'Sign in with an existing portal password.'}
           {stage === 'forgot' && 'Send a password reset link to the university email.'}
         </p>
@@ -183,33 +168,30 @@ export function LoginPage() {
           </div>
         </label>
 
-        {stage === 'code' && (
-          <>
-            <label>
-              Verification code
-              <input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" minLength={6} maxLength={6} required />
-            </label>
-          </>
-        )}
-
         {(stage === 'password' || stage === 'signin') && (
-          <label>
-            Password
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={stage === 'password' ? 8 : 6} required />
-          </label>
+          <PasswordField
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            minLength={stage === 'password' ? 8 : 6}
+            required
+          />
         )}
 
         {stage === 'password' && (
-          <label>
-            Confirm password
-            <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} required />
-          </label>
+          <PasswordField
+            label="Confirm password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            minLength={8}
+            required
+          />
         )}
 
         {error && <p className="form-error">{error}</p>}
 
         <button className="button primary" disabled={loading}>
-          {loading ? 'Working...' : stage === 'lookup' ? 'Continue' : stage === 'code' ? 'Verify code' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
+          {loading ? 'Working...' : stage === 'lookup' ? 'Continue' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
         </button>
 
         <div className="auth-alt-actions">

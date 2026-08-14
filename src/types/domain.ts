@@ -132,11 +132,6 @@ export interface OnboardingLookupResponse {
   currentTitleRole?: string;
 }
 
-export interface SendCodeResponse {
-  message: string;
-  devCode?: string;
-}
-
 export type RegistrationRequest = Omit<
   AlumniProfile,
   'id' | 'avatarUrl' | 'bioBookProfileJson' | 'role' | 'approved' | 'createdAt'

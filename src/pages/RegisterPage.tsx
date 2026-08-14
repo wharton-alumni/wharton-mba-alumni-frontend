@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
+import { PasswordField } from '../components/PasswordField';
 import { cohorts, industries } from '../data/options';
 import { bioBookProfileToRegistration, bioBookRegistrationFields } from '../data/biobookFields';
 import { api } from '../services/api';
@@ -12,6 +13,7 @@ function buildInitialForm(email = ''): RegistrationFormState {
     bioBookRegistrationFields.map((field) => {
       if (field.key === 'Work email') return [field.key, email];
       if (field.key === 'Cohort') return [field.key, 'Philadelphia'];
+      if (field.key === 'WEMBA class') return [field.key, "WEMBA'52"];
       if (field.key === 'Industry') return [field.key, 'Technology'];
       if (field.inputType === 'checkbox') return [field.key, false];
       return [field.key, ''];
@@ -150,6 +152,30 @@ function BioBookInput({
     );
   }
 
+  if (field.inputType === 'select' && field.options) {
+    return (
+      <label>
+        {field.label}
+        <select value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} required={field.required}>
+          {!value && <option value="">Select one</option>}
+          {field.options.map((option) => <option key={option}>{option}</option>)}
+        </select>
+      </label>
+    );
+  }
+
+  if (field.inputType === 'password') {
+    return (
+      <PasswordField
+        label={field.label}
+        value={String(value ?? '')}
+        onChange={(nextValue) => onChange(nextValue)}
+        minLength={6}
+        required={field.required}
+      />
+    );
+  }
+
   return (
     <label className={field.key.length > 42 ? 'wide-field' : undefined}>
       {field.label}
@@ -157,7 +183,6 @@ function BioBookInput({
         type={field.inputType ?? 'text'}
         value={String(value ?? '')}
         onChange={(event) => onChange(event.target.value)}
-        minLength={field.inputType === 'password' ? 6 : undefined}
         required={field.required}
       />
     </label>
