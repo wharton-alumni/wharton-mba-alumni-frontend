@@ -5,6 +5,7 @@ import type {
   BioBookClaimResponse,
   BioBookLookupResponse,
   BioBookProfile,
+  EventParticipant,
   EventRsvp,
   EventRsvpStatus,
   EventStatus,
@@ -186,6 +187,11 @@ export const api = {
       body: JSON.stringify({ status }),
     }),
 
+  getEventParticipants: async (eventId: string): Promise<EventParticipant[]> =>
+    request<EventParticipant[]>(`/events/${encodeURIComponent(eventId)}/participants`, {
+      suppressAuthRedirect: true,
+    }),
+
   moderateEvent: async (id: string, status: EventStatus): Promise<AlumniEvent> =>
     request<AlumniEvent>(`/admin/events/${encodeURIComponent(id)}/status`, {
       method: 'PATCH',
@@ -226,7 +232,7 @@ export const api = {
 
 async function request<T = unknown>(
   path: string,
-  options: RequestInit & { skipAuth?: boolean } = {},
+  options: RequestInit & { skipAuth?: boolean; suppressAuthRedirect?: boolean } = {},
 ): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set('Content-Type', 'application/json');
@@ -242,7 +248,7 @@ async function request<T = unknown>(
 
   if (!response.ok) {
     const message = await response.text();
-    if (!options.skipAuth && (response.status === 401 || response.status === 403)) {
+    if (!options.skipAuth && !options.suppressAuthRedirect && (response.status === 401 || response.status === 403)) {
       clearSession();
       redirectToLogin();
       throw new Error('Please login again, your session has expired.');

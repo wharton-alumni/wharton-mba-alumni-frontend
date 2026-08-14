@@ -124,7 +124,6 @@ export function JobsPage() {
           <label>Function / Role<select value={filters.role} onChange={(event) => setFilters({ ...filters, role: event.target.value })}><option value="">All Roles</option>{roleOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
           <label>Location<input placeholder="City, state, or remote" value={filters.location} onChange={(event) => setFilters({ ...filters, location: event.target.value })} /></label>
           <label>Job Type<select value={filters.type} onChange={(event) => setFilters({ ...filters, type: event.target.value })}><option value="">All Types</option>{jobTypes.map((option) => <option key={option}>{option}</option>)}</select></label>
-          <button className="button primary" type="button">Apply Filters</button>
         </aside>
 
         <section className="directory-results-panel jobs-results-panel">

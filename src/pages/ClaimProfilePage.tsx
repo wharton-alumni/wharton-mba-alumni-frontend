@@ -67,7 +67,7 @@ export function ClaimProfilePage() {
         updateCurrentProfile(updated);
 
       setSaved(true);
-      window.setTimeout(() => navigate('/directory'), 500);
+      window.setTimeout(() => navigate('/dashboard'), 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save your profile.');
     } finally {
@@ -150,7 +150,7 @@ export function ClaimProfilePage() {
         {error && <div className="error-banner">{error}</div>}
         {saved && <div className="success-banner">Profile saved.</div>}
         <button className="button primary" disabled={saving}>
-          <CheckCircle2 size={18} /> {saving ? 'Saving...' : 'Save and open directory'}
+          <CheckCircle2 size={18} /> {saving ? 'Saving...' : 'Save and open dashboard'}
         </button>
       </form>
     </section>

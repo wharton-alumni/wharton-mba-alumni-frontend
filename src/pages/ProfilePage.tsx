@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { BriefcaseBusiness, CalendarDays, Edit3, GraduationCap, Languages, Link as LinkIcon, Mail, MapPin, Phone, Search, ShieldCheck, Sparkles, UsersRound } from 'lucide-react';
+import { BriefcaseBusiness, CalendarDays, Edit3, GraduationCap, Languages, Link as LinkIcon, Mail, MapPin, Phone, Search, Sparkles, UsersRound } from 'lucide-react';
 import { useAuth } from '../components/AuthContext';
 import type { AlumniProfile, BioBookProfile } from '../types/domain';
 
@@ -8,6 +8,17 @@ type ProfileDetails = Partial<Record<keyof BioBookProfile, string | boolean>> & 
 
 export function ProfilePage() {
   const { profile } = useAuth();
+  const [activeTab, setActiveTab] = useState(() => window.location.hash.replace('#', '') || 'overview');
+
+  useEffect(() => {
+    function handleHashChange() {
+      setActiveTab(window.location.hash.replace('#', '') || 'overview');
+    }
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   if (!profile) return null;
 
   const bioBook = detailsFromProfile(profile);
@@ -82,7 +93,14 @@ export function ProfilePage() {
             </div>
             <nav className="profile-tabs" aria-label="Profile sections">
               {['Overview', 'About', 'Experience', 'Education', 'Mentorship'].map((tab, index) => (
-                <a className={index === 0 ? 'active' : ''} href={`#${tab.toLowerCase()}`} key={tab}>{tab}</a>
+                <a
+                  className={activeTab === tab.toLowerCase() || (!activeTab && index === 0) ? 'active' : ''}
+                  href={`#${tab.toLowerCase()}`}
+                  key={tab}
+                  onClick={() => setActiveTab(tab.toLowerCase())}
+                >
+                  {tab}
+                </a>
               ))}
             </nav>
           </section>
@@ -138,7 +156,7 @@ export function ProfilePage() {
           <ProfilePanel title={`About ${preferred}`}>
             <dl className="side-fact-list">
               <div><dt><CalendarDays size={16} /> Member Since</dt><dd>{stringValue(bioBook.batch) || 'Not provided'}</dd></div>
-              <div><dt><ShieldCheck size={16} /> Alumni ID</dt><dd>{profile.id || 'Not provided'}</dd></div>
+              <div><dt><Mail size={16} /> Email</dt><dd>{profile.email || 'Not provided'}</dd></div>
               <div><dt><UsersRound size={16} /> Cohort</dt><dd>{profile.cohortCampus || 'Not provided'}</dd></div>
               <div><dt><BriefcaseBusiness size={16} /> Experience</dt><dd>{stringValue(bioBook.yearsOfProfessionalExperience) || 'Not provided'}</dd></div>
             </dl>

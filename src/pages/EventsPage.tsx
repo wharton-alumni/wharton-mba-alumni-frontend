@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, CalendarDays, CalendarPlus, CheckCircle2, Clock, Grid2X2, List, MapPin, Search, Star, UserRound, UsersRound, Video, XCircle } from 'lucide-react';
+import { CalendarDays, CalendarPlus, CheckCircle2, Clock, Grid2X2, List, MapPin, Search, Star, UserRound, UsersRound, Video, XCircle } from 'lucide-react';
 import { AppTopbar } from '../components/AppTopbar';
 import { useAuth } from '../components/AuthContext';
 import { api } from '../services/api';
@@ -99,7 +99,6 @@ export function EventsPage() {
           <label>Location<input placeholder="City, venue, or virtual" value={filters.location} onChange={(event) => setFilters({ ...filters, location: event.target.value })} /></label>
           <label>Date From<input type="date" value={filters.dateFrom} onChange={(event) => setFilters({ ...filters, dateFrom: event.target.value })} /></label>
           <label>Date To<input type="date" value={filters.dateTo} onChange={(event) => setFilters({ ...filters, dateTo: event.target.value })} /></label>
-          <button className="button primary" type="button">Apply Filters</button>
         </aside>
 
         <section className="directory-results-panel event-results-panel">
@@ -132,6 +131,7 @@ export function EventsPage() {
 
 function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRsvp; onRsvp: (status: EventRsvpStatus) => Promise<void> }) {
   const [saving, setSaving] = useState<EventRsvpStatus | null>(null);
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   async function handleRsvp(status: EventRsvpStatus) {
     setSaving(status);
     try {
@@ -142,6 +142,8 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
   }
 
   const date = event.eventDate ? new Date(event.eventDate) : null;
+  const joined = rsvp?.status === 'JOINED';
+  const interested = rsvp?.status === 'INTERESTED';
 
   return (
     <article className="event-card polished-event-card">
@@ -150,7 +152,7 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
         <span className="event-status-badge">{event.category}</span>
       </div>
       <div className="event-card-body">
-        <h2>{event.title}</h2>
+        <h2><Link to={`/events/${event.id}`}>{event.title}</Link></h2>
         <p className="event-description">{event.description}</p>
         <div className="event-metadata">
           <span><CalendarDays size={15} /> {date ? date.toLocaleDateString() : 'Date TBD'}</span>
@@ -165,19 +167,45 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
         </div>
       </div>
       <div className="event-footer-actions">
-        <button className="button primary compact" type="button" disabled={saving === 'JOINED'} onClick={() => handleRsvp('JOINED')}>
-          <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : 'Join Event'}
+        <button
+          className="button primary compact"
+          type="button"
+          disabled={saving === 'JOINED' || saving === 'CANCELLED'}
+          onClick={() => {
+            if (joined) {
+              setConfirmWithdraw(true);
+              return;
+            }
+            handleRsvp('JOINED');
+          }}
+        >
+          <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : joined ? 'Joined' : 'Join Event'}
         </button>
-        <button className="button ghost compact" type="button" disabled={saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
-          <Star size={16} /> Interested
+        <button className="button ghost compact" type="button" disabled={interested || saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
+          <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
         </button>
-        <button className="button ghost compact" type="button" aria-label="Bookmark event"><Bookmark size={16} /> Bookmark</button>
+        <Link className="button ghost compact" to={`/events/${event.id}`}>View Details</Link>
         {rsvp?.status && rsvp.status !== 'CANCELLED' && (
           <button className="button ghost compact" type="button" disabled={saving === 'CANCELLED'} onClick={() => handleRsvp('CANCELLED')}>
             <XCircle size={16} /> Cancel
           </button>
         )}
       </div>
+      {confirmWithdraw && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="panel modal-panel">
+            <p className="eyebrow">Withdraw RSVP</p>
+            <h2>Do you want to withdraw from this event?</h2>
+            <p>You are currently marked as joined. Withdrawing will remove you from the participant list for this event.</p>
+            <div className="action-stack">
+              <button className="button danger" type="button" disabled={saving === 'CANCELLED'} onClick={async () => { await handleRsvp('CANCELLED'); setConfirmWithdraw(false); }}>
+                {saving === 'CANCELLED' ? 'Withdrawing...' : 'Withdraw'}
+              </button>
+              <button className="button ghost" type="button" onClick={() => setConfirmWithdraw(false)}>Keep Joined</button>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

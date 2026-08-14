@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Mail, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
 export function AppTopbar({ value = '', onSearch, readOnly = false }: { value?: string; onSearch?: (value: string) => void; readOnly?: boolean }) {
@@ -17,9 +17,6 @@ export function AppTopbar({ value = '', onSearch, readOnly = false }: { value?: 
         />
       </label>
       <div className="app-topbar-actions">
-        <button className="icon-button" aria-label="Notifications"><Bell size={18} /></button>
-        <button className="icon-button" aria-label="Messages"><Mail size={18} /></button>
-        <button className="icon-button" aria-label="Calendar"><CalendarDays size={18} /></button>
         {profile && (
           <div className="topbar-profile-pill">
             {profile.avatarUrl ? (

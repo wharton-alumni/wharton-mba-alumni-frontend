@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { BriefcaseBusiness, Building2, Download, Globe2, Grid2X2, List, MapPin, MoreVertical, Search, UsersRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { type KeyboardEvent, useEffect, useMemo, useState } from 'react';
+import { BriefcaseBusiness, Building2, Globe2, Grid2X2, List, MapPin, MoreVertical, Search, UsersRound } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { AppTopbar } from '../components/AppTopbar';
+import { allBatches } from '../data/batches';
 import { api } from '../services/api';
 import type { BioBookProfile } from '../types/domain';
 
@@ -32,12 +33,15 @@ export function DirectoryPage() {
   const [filters, setFilters] = useState<DirectoryFilterState>(emptyFilters);
   const [sortBy, setSortBy] = useState('lastName');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [selectedBatch, setSelectedBatch] = useState("WEMBA'52");
 
   useEffect(() => {
     api.getBioBookProfiles().then(setProfiles);
   }, []);
 
-  const visibleProfiles = useMemo(() => profiles.filter((profile) => !hasDemoFirstName(profile)), [profiles]);
+  const visibleProfiles = useMemo(() => (
+    profiles.filter((profile) => profile.batch === selectedBatch && !hasDemoFirstName(profile))
+  ), [profiles, selectedBatch]);
 
   const options = useMemo(() => ({
     locations: unique(visibleProfiles.map((profile) => compactJoin([profile.city, profile.stateCountry], ', '))),
@@ -73,7 +77,7 @@ export function DirectoryPage() {
       <div className="directory-header">
         <div>
           <h1>Directory</h1>
-          <p>Connect with fellow Wharton 52 alumni. Search, filter, and build meaningful connections.</p>
+          <p>Connect with fellow {selectedBatch} alumni. Search, filter, and build meaningful connections.</p>
         </div>
         <div className="directory-stats">
           {stats.map(({ label, value, icon: Icon }) => (
@@ -84,9 +88,6 @@ export function DirectoryPage() {
             </div>
           ))}
         </div>
-        <button className="button ghost compact" type="button">
-          <Download size={16} /> Export Directory
-        </button>
       </div>
 
       <div className="directory-workspace">
@@ -95,6 +96,9 @@ export function DirectoryPage() {
             <h2>Filter Directory</h2>
             <button type="button" onClick={() => setFilters(emptyFilters)}>Reset</button>
           </div>
+          <label>WEMBA Batch<select value={selectedBatch} onChange={(event) => { setSelectedBatch(event.target.value); setFilters(emptyFilters); }}>{
+            allBatches.map((batch) => <option key={batch}>{batch}</option>)
+          }</select></label>
           <label className="search-field">
             <Search size={17} />
             <input placeholder="Search by name, keyword..." value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} />
@@ -109,7 +113,6 @@ export function DirectoryPage() {
             <span>Open to mentoring</span>
             <input type="checkbox" checked={filters.openToMentoring} onChange={(event) => setFilters({ ...filters, openToMentoring: event.target.checked })} />
           </label>
-          <button className="button primary" type="button">Apply Filters</button>
         </aside>
 
         <section className="directory-results-panel">
@@ -131,7 +134,7 @@ export function DirectoryPage() {
             </div>
           </div>
 
-          {viewMode === 'table' ? (
+          {filteredProfiles.length > 0 && viewMode === 'table' ? (
             <div className="directory-table-wrap">
               <table className="directory-table">
                 <thead>
@@ -149,15 +152,21 @@ export function DirectoryPage() {
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : filteredProfiles.length > 0 ? (
             <div className="directory-grid-results">
               {filteredProfiles.map((profile) => <DirectoryTile key={profile.id} profile={profile} />)}
             </div>
-          )}
-          {filteredProfiles.length === 0 && (
+          ) : null}
+          {filteredProfiles.length === 0 && visibleProfiles.length > 0 && (
             <div className="empty-results">
               <h2>No alumni match those filters</h2>
               <p className="muted">Try removing one or more filters.</p>
+            </div>
+          )}
+          {filteredProfiles.length === 0 && visibleProfiles.length === 0 && (
+            <div className="empty-results">
+              <h2>{selectedBatch} directory is coming soon</h2>
+              <p className="muted">We're working on collecting data and this directory will be live soon.</p>
             </div>
           )}
         </section>
@@ -167,13 +176,27 @@ export function DirectoryPage() {
 }
 
 function DirectoryRow({ profile }: { profile: BioBookProfile }) {
+  const navigate = useNavigate();
+  const profilePath = `/directory/${profile.id}`;
+
+  function openProfile() {
+    navigate(profilePath);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLTableRowElement>) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openProfile();
+    }
+  }
+
   return (
-    <tr>
+    <tr className="directory-click-row" role="link" tabIndex={0} onClick={openProfile} onKeyDown={handleKeyDown}>
       <td>
         <div className="directory-person-cell">
           <Avatar profile={profile} />
           <div>
-            <Link to={`/directory/${profile.id}`}>{profile.fullLegalName}</Link>
+            <Link to={profilePath} onClick={(event) => event.stopPropagation()}>{profile.fullLegalName}</Link>
             <span>{profile.currentTitleRole || 'Not provided'}</span>
             {profile.willingToMentor && <em>Mentor</em>}
           </div>
@@ -185,7 +208,7 @@ function DirectoryRow({ profile }: { profile: BioBookProfile }) {
       <td>{profile.functionalArea || 'Not provided'}</td>
       <td>
         <div className="directory-row-actions">
-          <Link className="button ghost compact" to={`/directory/${profile.id}`}>View</Link>
+          <Link className="button ghost compact" to={profilePath} onClick={(event) => event.stopPropagation()}>View</Link>
           <MoreVertical size={17} />
         </div>
       </td>
@@ -195,7 +218,7 @@ function DirectoryRow({ profile }: { profile: BioBookProfile }) {
 
 function DirectoryTile({ profile }: { profile: BioBookProfile }) {
   return (
-    <article className="profile-card biobook-card">
+    <Link className="profile-card biobook-card directory-click-card" to={`/directory/${profile.id}`}>
       <Avatar profile={profile} />
       <div>
         <h2>{profile.fullLegalName}</h2>
@@ -206,9 +229,9 @@ function DirectoryTile({ profile }: { profile: BioBookProfile }) {
           {profile.functionalArea && <span className="badge">{profile.functionalArea}</span>}
           {profile.willingToMentor && <span className="badge crimson">Mentor</span>}
         </div>
-        <Link className="button ghost compact" to={`/directory/${profile.id}`}>View profile</Link>
+        <span className="button ghost compact">View profile</span>
       </div>
-    </article>
+    </Link>
   );
 }
 

@@ -2,13 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Bell,
   BriefcaseBusiness,
   CalendarDays,
   ChevronRight,
   GraduationCap,
   HeartHandshake,
-  Mail,
   MapPin,
   Search,
   ShieldCheck,
@@ -100,9 +98,6 @@ export function DashboardPage() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Wharton 52..." />
         </label>
         <div className="dashboard-tools">
-          <button className="icon-button" aria-label="Notifications"><Bell size={18} /></button>
-          <button className="icon-button" aria-label="Messages"><Mail size={18} /></button>
-          <button className="icon-button" aria-label="Calendar"><CalendarDays size={18} /></button>
           {profile?.avatarUrl ? (
             <img className="avatar avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
           ) : profile ? (
@@ -153,7 +148,7 @@ export function DashboardPage() {
           </section>
 
           <section className="dashboard-card-row">
-            <DashboardPanel title="Community Feed" action="Open Hub" to="/dashboard">
+            <DashboardPanel title="Community Feed">
               {updates.map((item) => <UpdateMini key={item.title} item={item} />)}
             </DashboardPanel>
             <DashboardPanel title="Updates from Wharton 52" action="Source" href={metrics.sourceUrl}>

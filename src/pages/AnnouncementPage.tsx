@@ -1,4 +1,4 @@
-import { Bell, MailPlus, Newspaper, Sparkles } from 'lucide-react';
+import { Bell, Newspaper, Sparkles } from 'lucide-react';
 import { AppTopbar } from '../components/AppTopbar';
 
 export function AnnouncementPage() {
@@ -22,9 +22,6 @@ export function AnnouncementPage() {
           <div>
             <h2>Wharton Executive MBA network announcements are coming soon</h2>
             <p>Updates for the alumni portal will appear here once they are available to the class network.</p>
-          </div>
-          <div className="announcement-actions">
-            <button className="button primary compact" type="button"><MailPlus size={16} /> Subscribe to Updates</button>
           </div>
         </article>
 

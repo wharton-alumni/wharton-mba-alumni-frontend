@@ -189,4 +189,16 @@ export interface EventRsvp {
   joinedCount: number;
   interestedCount: number;
   updatedAt: string;
+  participants?: EventParticipant[];
+}
+
+export interface EventParticipant {
+  profileId: string;
+  fullName: string;
+  currentTitle: string;
+  currentCompany: string;
+  cohortCampus: CohortCampus;
+  classYear: number;
+  avatarUrl?: string;
+  joinedAt: string;
 }

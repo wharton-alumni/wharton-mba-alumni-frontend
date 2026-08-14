@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BriefcaseBusiness, CalendarDays, GraduationCap, Languages, Link as LinkIcon, Mail, MapPin, MessageSquare, MoreVertical, Search, ShieldCheck, Sparkles, UserPlus, UsersRound } from 'lucide-react';
+import { BriefcaseBusiness, CalendarDays, GraduationCap, Languages, Link as LinkIcon, Mail, MapPin, Search, ShieldCheck, Sparkles, UsersRound } from 'lucide-react';
 import { api } from '../services/api';
 import type { BioBookProfile } from '../types/domain';
 
@@ -9,10 +9,20 @@ export function DirectoryProfilePage() {
   const { profileId } = useParams();
   const [profile, setProfile] = useState<BioBookProfile | undefined>();
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState(() => window.location.hash.replace('#', '') || 'overview');
 
   useEffect(() => {
     if (profileId) api.getBioBookProfileById(profileId).then(setProfile);
   }, [profileId]);
+
+  useEffect(() => {
+    function handleHashChange() {
+      setActiveTab(window.location.hash.replace('#', '') || 'overview');
+    }
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const details = useMemo(() => profile ? buildProfileDetails(profile) : [], [profile]);
 
@@ -29,6 +39,7 @@ export function DirectoryProfilePage() {
   }
 
   const initials = initialsFor(profile.fullLegalName);
+  const email = firstAvailable(profile.personalEmailForClassDirectory ?? '', profile.universityEmailAlias ?? '', 'Not provided');
   const location = compactJoin([profile.city, profile.stateCountry], ', ');
   const interests = splitList(`${profile.clubsInterestedIn}, ${profile.hobbiesInterests}, ${profile.industriesWantToBreakIntoLearn}`).slice(0, 8);
   const experiences = [
@@ -80,7 +91,14 @@ export function DirectoryProfilePage() {
             </div>
             <nav className="profile-tabs" aria-label="Profile sections">
               {['Overview', 'About', 'Experience', 'Education', 'Mentorship'].map((tab, index) => (
-                <a className={index === 0 ? 'active' : ''} href={`#${tab.toLowerCase()}`} key={tab}>{tab}</a>
+                <a
+                  className={activeTab === tab.toLowerCase() || (!activeTab && index === 0) ? 'active' : ''}
+                  href={`#${tab.toLowerCase()}`}
+                  key={tab}
+                  onClick={() => setActiveTab(tab.toLowerCase())}
+                >
+                  {tab}
+                </a>
               ))}
             </nav>
           </section>
@@ -130,15 +148,10 @@ export function DirectoryProfilePage() {
         </main>
 
         <aside className="alumni-profile-side">
-          <div className="profile-actions">
-            <button className="button ghost compact"><MessageSquare size={16} /> Message</button>
-            <button className="button primary compact"><UserPlus size={16} /> Connect</button>
-            <button className="icon-button" aria-label="More actions"><MoreVertical size={17} /></button>
-          </div>
           <ProfilePanel title={`About ${preferredName(profile)}`}>
             <dl className="side-fact-list">
               <div><dt><CalendarDays size={16} /> Member Since</dt><dd>{profile.batch || 'Not provided'}</dd></div>
-              <div><dt><ShieldCheck size={16} /> Alumni ID</dt><dd>{profile.id || 'Not provided'}</dd></div>
+              <div><dt><Mail size={16} /> Email</dt><dd>{email}</dd></div>
               <div><dt><UsersRound size={16} /> Cohort</dt><dd>{profile.cohortCampus || 'Not provided'}</dd></div>
               <div><dt><BriefcaseBusiness size={16} /> Experience</dt><dd>{profile.yearsOfProfessionalExperience || 'Not provided'}</dd></div>
             </dl>

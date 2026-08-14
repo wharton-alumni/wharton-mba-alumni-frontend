@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { DirectoryPage } from './pages/DirectoryPage';
 import { DirectoryProfilePage } from './pages/DirectoryProfilePage';
 import { EventFormPage } from './pages/EventFormPage';
+import { EventDetailPage } from './pages/EventDetailPage';
 import { EventsPage } from './pages/EventsPage';
 import { JobDetailPage } from './pages/JobDetailPage';
 import { JobsPage } from './pages/JobsPage';
@@ -62,6 +63,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <EventFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="events/:eventId"
+            element={
+              <ProtectedRoute>
+                <EventDetailPage />
               </ProtectedRoute>
             }
           />
