@@ -46,7 +46,7 @@ export function RegisterPage() {
     try {
       const session = await api.register(bioBookProfileToRegistration(form));
       setSession(session.token, session.profile);
-      navigate('/profile');
+      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create your profile.');
     } finally {
@@ -80,7 +80,7 @@ export function RegisterPage() {
           <div className="panel modal-panel">
             <p className="eyebrow">Consent</p>
             <h2>Store profile data</h2>
-            <p>The portal will store the submitted account and profile details for authentication, profile management, directory access, and alumni networking features.</p>
+            <p>The profile can be prefilled from previously fetched information. By continuing, you consent to storing this account and profile data for the alumni portal experience.</p>
             <div className="action-stack">
               <button
                 className="button primary"

@@ -12,8 +12,9 @@ export function ClaimProfilePage() {
   const { profile: currentProfile, updateCurrentProfile } = useAuth();
   const storedProfile = useMemo(() => {
     const stored = localStorage.getItem('wharton.biobookProfile');
-    return stored ? JSON.parse(stored) as BioBookProfile : null;
-  }, []);
+    if (stored) return JSON.parse(stored) as BioBookProfile;
+    return currentProfile?.bioBookProfileJson ? JSON.parse(currentProfile.bioBookProfileJson) as BioBookProfile : null;
+  }, [currentProfile]);
   const [profile, setProfile] = useState<BioBookProfile | null>(storedProfile);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,6 +59,8 @@ export function ClaimProfilePage() {
           city: profile.city || profile.currentCityOfResidence,
           stateCountry: profile.stateCountry,
           linkedinUrl: profile.linkedinUrl,
+          avatarUrl: profile.headshotProfessional,
+          bioBookProfileJson: JSON.stringify(profile),
           bio: profile.careerTrajectoryIn3Bullets || profile.canHelpClassmatesWith || currentProfile.bio,
           willingToMentor: profile.willingToMentor,
         });

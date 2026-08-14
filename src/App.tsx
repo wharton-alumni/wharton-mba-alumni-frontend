@@ -3,6 +3,7 @@ import { AuthProvider } from './components/AuthContext';
 import { Layout } from './components/Layout';
 import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute';
 import { AdminEventsPage } from './pages/AdminEventsPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { DirectoryPage } from './pages/DirectoryPage';
 import { DirectoryProfilePage } from './pages/DirectoryProfilePage';
 import { EventFormPage } from './pages/EventFormPage';
@@ -21,9 +22,17 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/directory" replace />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="directory"
             element={

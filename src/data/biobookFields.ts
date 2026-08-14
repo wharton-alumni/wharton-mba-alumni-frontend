@@ -13,6 +13,7 @@ export const bioBookRegistrationFields: BioBookField[] = [
   { key: 'Full legal name', label: 'Full legal name', profileKey: 'fullLegalName', required: true },
   { key: 'Preferred name / Nickname', label: 'Preferred name / Nickname', profileKey: 'preferredNameNickname' },
   { key: 'Pronouns', label: 'Pronouns', profileKey: 'pronouns' },
+  { key: 'Headshot (professional)', label: 'Headshot (professional)', profileKey: 'headshotProfessional', inputType: 'url' },
   { key: 'Cohort', label: 'Cohort', profileKey: 'cohortCampus', inputType: 'select', required: true },
   { key: 'Hometown (where you grew up)', label: 'Hometown (where you grew up)', profileKey: 'hometownWhereYouGrewUp' },
   { key: 'Current City of Residence', label: 'Current City of Residence', profileKey: 'currentCityOfResidence', required: true },
@@ -46,6 +47,12 @@ export const bioBookRegistrationFields: BioBookField[] = [
   { key: "Clubs you're interested in..", label: "Clubs you're interested in..", profileKey: 'clubsInterestedIn', inputType: 'textarea' },
   { key: 'Willing to host a class event in your city', label: 'Willing to host a class event in your city', profileKey: 'willingToHostClassEventInYourCity' },
   { key: 'Willing to be a guest speaker for a club', label: 'Willing to be a guest speaker for a club', profileKey: 'willingToBeGuestSpeakerForClub' },
+  { key: 'Personal email (for class directory)', label: 'Personal email (for class directory)', profileKey: 'personalEmailForClassDirectory', inputType: 'email' },
+  { key: 'Mobile Number', label: 'Mobile Number', profileKey: 'mobileNumber' },
+  { key: 'Instagram Handle', label: 'Instagram Handle', profileKey: 'instagramHandle' },
+  { key: 'Instagram Handle 2', label: 'Instagram Handle 2', profileKey: 'instagramHandle2' },
+  { key: 'Personal website / Substack / portfolio', label: 'Personal website / Substack / portfolio', profileKey: 'personalWebsiteSubstackPortfolio', inputType: 'url' },
+  { key: 'Are you a military veteran?', label: 'Are you a military veteran?', profileKey: 'militaryVeteran' },
   { key: 'Password', label: 'Password', inputType: 'password', required: true, accountOnly: true },
 ];
 
@@ -78,5 +85,7 @@ export function bioBookProfileToRegistration(
     bio,
     willingToMentor: Boolean(values['Open to mentoring']),
     hiring: false,
+    avatarUrl: String(values['Headshot (professional)'] ?? ''),
+    bioBookProfileJson: JSON.stringify(values),
   };
 }

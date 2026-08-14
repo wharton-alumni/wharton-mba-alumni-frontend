@@ -5,10 +5,14 @@ import type {
   BioBookClaimResponse,
   BioBookLookupResponse,
   BioBookProfile,
+  EventRsvp,
+  EventRsvpStatus,
   EventStatus,
   LoginResponse,
+  OnboardingLookupResponse,
   PasswordResetResponse,
   RegistrationRequest,
+  SendCodeResponse,
 } from '../types/domain';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.whartonemba.com/api';
@@ -69,8 +73,40 @@ export const api = {
       skipAuth: true,
     }),
 
+  lookupOnboarding: async (email: string): Promise<OnboardingLookupResponse> =>
+    request<OnboardingLookupResponse>('/onboarding/lookup', {
+      method: 'POST',
+      body: JSON.stringify({ email: toClaimEmail(email) }),
+      skipAuth: true,
+    }),
+
+  sendOnboardingCode: async (email: string): Promise<SendCodeResponse> =>
+    request<SendCodeResponse>('/onboarding/send-code', {
+      method: 'POST',
+      body: JSON.stringify({ email: toClaimEmail(email) }),
+      skipAuth: true,
+    }),
+
+  verifyOnboardingCode: async (email: string, code: string): Promise<void> =>
+    request('/onboarding/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ email: toClaimEmail(email), code }),
+      skipAuth: true,
+    }),
+
+  claimWithCode: async (email: string, code: string, password: string): Promise<LoginResponse> => {
+    const response = await request<LoginResponse>('/onboarding/claim', {
+      method: 'POST',
+      body: JSON.stringify({ email: toClaimEmail(email), code, password }),
+      skipAuth: true,
+    });
+    persistSession(response);
+    await flushPendingConsent();
+    return response;
+  },
+
   recordConsent: async (email: string, source: string): Promise<void> => {
-    const consentText = `Consent accepted for ${source} by ${toUniversityEmail(email)}.`;
+    const consentText = `Your profile may be pre-populated with existing alumni details. By continuing, ${toUniversityEmail(email)} agreed to allow us to store and use account and profile information to provide access to the alumni portal. Source: ${source}.`;
     if (!getToken()) {
       sessionStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify({ consentText }));
       return;
@@ -139,6 +175,15 @@ export const api = {
     request<AlumniEvent>('/events', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+
+  getMyEventRsvps: async (): Promise<EventRsvp[]> =>
+    request<EventRsvp[]>('/events/rsvps/me'),
+
+  updateEventRsvp: async (eventId: string, status: EventRsvpStatus): Promise<EventRsvp> =>
+    request<EventRsvp>(`/events/${encodeURIComponent(eventId)}/rsvp`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
     }),
 
   moderateEvent: async (id: string, status: EventStatus): Promise<AlumniEvent> =>
@@ -258,6 +303,12 @@ function redirectToLogin() {
 function toUniversityEmail(value: string) {
   const trimmed = value.trim().toLowerCase();
   return trimmed.includes('@') ? trimmed : `${trimmed}@${UNIVERSITY_DOMAIN}`;
+}
+
+function toClaimEmail(value: string) {
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed.includes('@')) return trimmed;
+  return `${trimmed}@${UNIVERSITY_DOMAIN}`;
 }
 
 function toJobListing(job: BackendJobPost, fallback?: Partial<JobListing>): JobListing {

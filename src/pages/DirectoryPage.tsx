@@ -1,293 +1,259 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ExternalLink, Search } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { cohorts, industries } from '../data/options';
-import { brandAssets, brandCopy } from '../data/brand';
-import { olderBatches, topBatches } from '../data/batches';
-import classMetrics from '../data/classMetrics.json';
-import { api, type DirectoryFilters } from '../services/api';
+import { BriefcaseBusiness, Building2, Download, Globe2, Grid2X2, List, MapPin, MoreVertical, Search, UsersRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AppTopbar } from '../components/AppTopbar';
+import { api } from '../services/api';
 import type { BioBookProfile } from '../types/domain';
 
-type DirectoryTab = 'dashboard' | 'directory';
-interface ClassMetric {
-  label: string;
-  value: string;
+interface DirectoryFilterState {
+  search: string;
+  location: string;
+  industry: string;
+  functionArea: string;
+  company: string;
+  classYear: string;
+  interest: string;
+  openToMentoring: boolean;
 }
 
-interface CohortMetric {
-  label: string;
-  count: number;
-  share: number;
-  color: string;
-}
-
-interface ClassMetrics {
-  batch: string;
-  source: string;
-  sourceUrl: string;
-  officialClassLabel: string;
-  overview: string;
-  stats: ClassMetric[];
-  cohorts: CohortMetric[];
-  workExperience: {
-    averageYears: string;
-    minimumYears: number;
-    medianSalaryAndBonus: string;
-  };
-  testScores: ClassMetric[];
-  industryMix: ClassMetric[];
-  notes: string[];
-}
-
-const metricsByBatch = classMetrics as Record<string, ClassMetrics>;
+const emptyFilters: DirectoryFilterState = {
+  search: '',
+  location: '',
+  industry: '',
+  functionArea: '',
+  company: '',
+  classYear: '',
+  interest: '',
+  openToMentoring: false,
+};
 
 export function DirectoryPage() {
-  const [wemba52Profiles, setWemba52Profiles] = useState<BioBookProfile[]>([]);
-  const [filters, setFilters] = useState<DirectoryFilters>({});
-  const [selectedBatch, setSelectedBatch] = useState("WEMBA'52");
-  const [activeTab, setActiveTab] = useState<DirectoryTab>('dashboard');
+  const [profiles, setProfiles] = useState<BioBookProfile[]>([]);
+  const [filters, setFilters] = useState<DirectoryFilterState>(emptyFilters);
+  const [sortBy, setSortBy] = useState('lastName');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   useEffect(() => {
-    api.getBioBookProfiles().then(setWemba52Profiles);
+    api.getBioBookProfiles().then(setProfiles);
   }, []);
 
-  const directoryProfiles = useMemo(() => {
-    if (selectedBatch !== "WEMBA'52") return [];
-    return wemba52Profiles.filter((profile) => matchesBioBookFilters(profile, filters));
-  }, [filters, selectedBatch, wemba52Profiles]);
-  const bioBookIndustries = useMemo(() => {
-    const fromBioBook = new Set(wemba52Profiles.map((profile) => profile.industry).filter(Boolean));
-    return Array.from(new Set([...industries, ...fromBioBook])).sort();
-  }, [wemba52Profiles]);
+  const visibleProfiles = useMemo(() => profiles.filter((profile) => !hasDemoFirstName(profile)), [profiles]);
+
+  const options = useMemo(() => ({
+    locations: unique(visibleProfiles.map((profile) => compactJoin([profile.city, profile.stateCountry], ', '))),
+    industries: unique(visibleProfiles.map((profile) => profile.industry)),
+    functions: unique(visibleProfiles.map((profile) => profile.functionalArea)),
+    companies: unique(visibleProfiles.map((profile) => profile.currentEmployer)),
+    classYears: unique(visibleProfiles.map((profile) => String(profile.classYear))),
+    interests: unique(visibleProfiles.flatMap((profile) => splitList(profile.clubsInterestedIn || profile.hobbiesInterests))),
+  }), [visibleProfiles]);
+
+  const filteredProfiles = useMemo(() => {
+    const filtered = visibleProfiles.filter((profile) => matchesFilters(profile, filters));
+    return filtered.sort((left, right) => {
+      if (sortBy === 'firstName') return firstNameFor(left.fullLegalName).localeCompare(firstNameFor(right.fullLegalName));
+      if (sortBy === 'company') return valueOr(left.currentEmployer).localeCompare(valueOr(right.currentEmployer));
+      if (sortBy === 'industry') return valueOr(left.industry).localeCompare(valueOr(right.industry));
+      if (sortBy === 'location') return valueOr(left.city).localeCompare(valueOr(right.city));
+      return lastNameFor(left.fullLegalName).localeCompare(lastNameFor(right.fullLegalName));
+    });
+  }, [filters, visibleProfiles, sortBy]);
+
+  const stats = [
+    { label: 'Total Alumni', value: String(visibleProfiles.length), icon: UsersRound },
+    { label: 'Locations', value: String(options.locations.length), icon: Globe2 },
+    { label: 'Industries', value: String(options.industries.length), icon: BriefcaseBusiness },
+    { label: 'Cohorts', value: String(unique(visibleProfiles.map((profile) => profile.cohortCampus)).length), icon: Building2 },
+  ];
 
   return (
-    <section className="content">
-      <div className="product-hero">
-        <div className="product-hero-copy">
-          <img src={brandAssets.executiveMbaLogo} alt="Wharton Executive MBA" className="emba-lockup" />
-          <p className="eyebrow">Alumni directory</p>
-          <h1>{brandCopy.headline}</h1>
-          <p>Connect with Wharton alumni by Executive MBA batch, then switch between the class dashboard and alumni directory.</p>
-          <div className="batch-strip">
-            {topBatches.map((batch) => (
-              <button
-                key={batch}
-                className={selectedBatch === batch ? 'batch-chip active' : 'batch-chip'}
-                onClick={() => {
-                  setSelectedBatch(batch);
-                  setActiveTab('dashboard');
-                }}
-              >
-                {batch}
-              </button>
-            ))}
-            <label className="batch-select-label">
-              More batches
-              <select
-                value={olderBatches.includes(selectedBatch) ? selectedBatch : ''}
-                onChange={(event) => {
-                  if (!event.target.value) return;
-                  setSelectedBatch(event.target.value);
-                  setActiveTab('dashboard');
-                }}
-              >
-                <option value="">Select batch</option>
-                {olderBatches.map((batch) => <option key={batch}>{batch}</option>)}
-              </select>
-            </label>
-          </div>
+    <section className="directory-page">
+      <AppTopbar value={filters.search} onSearch={(search) => setFilters({ ...filters, search })} />
+
+      <div className="directory-header">
+        <div>
+          <h1>Directory</h1>
+          <p>Connect with fellow Wharton 52 alumni. Search, filter, and build meaningful connections.</p>
         </div>
-      </div>
-      <div className="tabs" role="tablist">
-        <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>Dashboard</button>
-        <button className={activeTab === 'directory' ? 'active' : ''} onClick={() => setActiveTab('directory')}>Directory List</button>
-      </div>
-      {activeTab === 'dashboard' ? (
-        <BatchDashboard batch={selectedBatch} />
-      ) : (
-      <div className="directory-layout">
-        <aside className="filters panel">
-          <label className="search-field">
-            <Search size={18} />
-            <input placeholder="Name, company, title, keyword" value={filters.search ?? ''} onChange={(event) => setFilters({ ...filters, search: event.target.value })} />
-          </label>
-          <label>Cohort<select value={filters.cohortCampus ?? ''} onChange={(event) => setFilters({ ...filters, cohortCampus: event.target.value })}><option value="">All</option>{cohorts.map((cohort) => <option key={cohort}>{cohort}</option>)}</select></label>
-          <label>Industry<select value={filters.industry ?? ''} onChange={(event) => setFilters({ ...filters, industry: event.target.value })}><option value="">All</option>{bioBookIndustries.map((industry) => <option key={industry}>{industry}</option>)}</select></label>
-          <label>Location<input placeholder="City or country" value={filters.location ?? ''} onChange={(event) => setFilters({ ...filters, location: event.target.value })} /></label>
-          <div className="toggle-row stacked">
-            <label><input type="checkbox" checked={filters.willingToMentor ?? false} onChange={(event) => setFilters({ ...filters, willingToMentor: event.target.checked })} /> Open to mentoring</label>
-          </div>
-        </aside>
-        <div className="card-grid">
-          {selectedBatch !== "WEMBA'52" ? (
-            <section className="panel coming-soon">
-              <p className="eyebrow">{selectedBatch} directory</p>
-              <h2>Directory would be live soon</h2>
-              <p className="muted">The BioBook-powered alumni list is currently available for WEMBA'52.</p>
-            </section>
-          ) : directoryProfiles.length === 0 ? (
-            <section className="panel coming-soon">
-              <p className="eyebrow">No matches</p>
-              <h2>Try a broader search</h2>
-              <p className="muted">Search by name, employer, title, city, industry, interests, or ways classmates can help.</p>
-            </section>
-          ) : directoryProfiles.map((profile) => (
-            <BioBookProfileCard key={profile.id} profile={profile} />
+        <div className="directory-stats">
+          {stats.map(({ label, value, icon: Icon }) => (
+            <div key={label}>
+              <Icon size={22} />
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </div>
           ))}
         </div>
+        <button className="button ghost compact" type="button">
+          <Download size={16} /> Export Directory
+        </button>
       </div>
-      )}
+
+      <div className="directory-workspace">
+        <aside className="directory-filter-panel">
+          <div className="panel-heading">
+            <h2>Filter Directory</h2>
+            <button type="button" onClick={() => setFilters(emptyFilters)}>Reset</button>
+          </div>
+          <label className="search-field">
+            <Search size={17} />
+            <input placeholder="Search by name, keyword..." value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} />
+          </label>
+          <label>Location<select value={filters.location} onChange={(event) => setFilters({ ...filters, location: event.target.value })}><option value="">All Locations</option>{options.locations.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label>Industry<select value={filters.industry} onChange={(event) => setFilters({ ...filters, industry: event.target.value })}><option value="">All Industries</option>{options.industries.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label>Function<select value={filters.functionArea} onChange={(event) => setFilters({ ...filters, functionArea: event.target.value })}><option value="">All Functions</option>{options.functions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label>Company<select value={filters.company} onChange={(event) => setFilters({ ...filters, company: event.target.value })}><option value="">All Companies</option>{options.companies.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label>Graduation Year<select value={filters.classYear} onChange={(event) => setFilters({ ...filters, classYear: event.target.value })}><option value="">Select Year</option>{options.classYears.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label>Interests<select value={filters.interest} onChange={(event) => setFilters({ ...filters, interest: event.target.value })}><option value="">Select Interests</option>{options.interests.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label className="directory-switch">
+            <span>Open to mentoring</span>
+            <input type="checkbox" checked={filters.openToMentoring} onChange={(event) => setFilters({ ...filters, openToMentoring: event.target.checked })} />
+          </label>
+          <button className="button primary" type="button">Apply Filters</button>
+        </aside>
+
+        <section className="directory-results-panel">
+          <div className="directory-results-toolbar">
+            <span>Showing 1 - {filteredProfiles.length} of {visibleProfiles.length} alumni</span>
+            <div>
+              <label>
+                Sort by:
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                  <option value="lastName">Last Name (A-Z)</option>
+                  <option value="firstName">First Name (A-Z)</option>
+                  <option value="company">Company</option>
+                  <option value="industry">Industry</option>
+                  <option value="location">Location</option>
+                </select>
+              </label>
+              <button className={viewMode === 'grid' ? 'icon-button active' : 'icon-button'} aria-label="Grid view" onClick={() => setViewMode('grid')}><Grid2X2 size={18} /></button>
+              <button className={viewMode === 'table' ? 'icon-button active' : 'icon-button'} aria-label="Table view" onClick={() => setViewMode('table')}><List size={18} /></button>
+            </div>
+          </div>
+
+          {viewMode === 'table' ? (
+            <div className="directory-table-wrap">
+              <table className="directory-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Company</th>
+                    <th>Industry</th>
+                    <th>Function</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProfiles.map((profile) => <DirectoryRow key={profile.id} profile={profile} />)}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="directory-grid-results">
+              {filteredProfiles.map((profile) => <DirectoryTile key={profile.id} profile={profile} />)}
+            </div>
+          )}
+          {filteredProfiles.length === 0 && (
+            <div className="empty-results">
+              <h2>No alumni match those filters</h2>
+              <p className="muted">Try removing one or more filters.</p>
+            </div>
+          )}
+        </section>
+      </div>
     </section>
   );
 }
 
-function BioBookProfileCard({ profile }: { profile: BioBookProfile }) {
-  const navigate = useNavigate();
-  const initials = initialsFor(profile.fullLegalName);
+function DirectoryRow({ profile }: { profile: BioBookProfile }) {
   return (
-    <article
-      className="profile-card biobook-card clickable-card"
-      role="link"
-      tabIndex={0}
-      onClick={() => navigate(`/directory/${profile.id}`)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') navigate(`/directory/${profile.id}`);
-      }}
-    >
-      <div className="avatar">{initials}</div>
+    <tr>
+      <td>
+        <div className="directory-person-cell">
+          <Avatar profile={profile} />
+          <div>
+            <Link to={`/directory/${profile.id}`}>{profile.fullLegalName}</Link>
+            <span>{profile.currentTitleRole || 'Not provided'}</span>
+            {profile.willingToMentor && <em>Mentor</em>}
+          </div>
+        </div>
+      </td>
+      <td>{compactJoin([profile.city, profile.stateCountry], ', ') || 'Not provided'}</td>
+      <td>{profile.currentEmployer || 'Not provided'}</td>
+      <td>{profile.industry || 'Not provided'}</td>
+      <td>{profile.functionalArea || 'Not provided'}</td>
+      <td>
+        <div className="directory-row-actions">
+          <Link className="button ghost compact" to={`/directory/${profile.id}`}>View</Link>
+          <MoreVertical size={17} />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function DirectoryTile({ profile }: { profile: BioBookProfile }) {
+  return (
+    <article className="profile-card biobook-card">
+      <Avatar profile={profile} />
       <div>
-        <div className="card-title-row">
-          <h2>{profile.fullLegalName}</h2>
-          <span className="badge">{profile.batch} · {profile.cohortCampus}</span>
-        </div>
+        <h2>{profile.fullLegalName}</h2>
         <p className="role-line">{compactJoin([profile.currentTitleRole, profile.currentEmployer], ' at ')}</p>
-        <p className="muted">{compactJoin([compactJoin([profile.city, profile.stateCountry], ', '), profile.industry, profile.functionalArea], ' · ')}</p>
-        {profile.canHelpClassmatesWith && <p><strong>Can help with:</strong> {profile.canHelpClassmatesWith}</p>}
-        {profile.postMbaCareerGoal && <p><strong>Post-MBA goal:</strong> {profile.postMbaCareerGoal}</p>}
+        <p className="muted"><MapPin size={14} /> {compactJoin([profile.city, profile.stateCountry], ', ') || 'Not provided'}</p>
         <div className="badge-row">
+          {profile.industry && <span className="badge">{profile.industry}</span>}
+          {profile.functionalArea && <span className="badge">{profile.functionalArea}</span>}
           {profile.willingToMentor && <span className="badge crimson">Mentor</span>}
-          {profile.yearsOfProfessionalExperience && <span className="badge">{profile.yearsOfProfessionalExperience} years</span>}
-          {profile.majors && <span className="badge green">{profile.majors}</span>}
         </div>
-        <div className="profile-card-links">
-          <span className="button ghost compact">View profile</span>
-          {profile.linkedinUrl && <a className="button ghost compact" href={normalizeUrl(profile.linkedinUrl)} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}><ExternalLink size={16} /> LinkedIn</a>}
-        </div>
+        <Link className="button ghost compact" to={`/directory/${profile.id}`}>View profile</Link>
       </div>
     </article>
   );
 }
 
-function BatchDashboard({ batch }: { batch: string }) {
-  const metrics = metricsByBatch[batch];
-  if (!metrics) {
-    return (
-      <section className="panel coming-soon">
-        <p className="eyebrow">{batch} dashboard</p>
-        <h2>Dashboard would be live soon</h2>
-        <p className="muted">The class metrics dashboard is currently available for WEMBA'52, WEMBA'51, and WEMBA'50.</p>
-      </section>
-    );
+function Avatar({ profile }: { profile: BioBookProfile }) {
+  if (profile.headshotProfessional) {
+    return <img className="avatar avatar-image" src={profile.headshotProfessional} alt={profile.fullLegalName} />;
   }
-
-  return (
-    <section className="dashboard-stack">
-      <div className="panel dashboard-intro">
-        <div>
-          <p className="eyebrow">{metrics.batch} · {metrics.officialClassLabel}</p>
-          <h2>Class metrics dashboard</h2>
-          <p>{metrics.overview}</p>
-        </div>
-        <a className="button ghost compact" href={metrics.sourceUrl} target="_blank" rel="noreferrer">Source <ExternalLink size={16} /></a>
-      </div>
-      <div className="metric-grid">
-        {metrics.stats.map((stat) => (
-          <article className="metric-card" key={stat.label}>
-            <strong>{stat.value}</strong>
-            <span>{stat.label}</span>
-          </article>
-        ))}
-      </div>
-      <div className="dashboard-layout">
-        <section className="panel">
-          <h2>Cohort Distribution</h2>
-          <div className="cohort-metrics">
-            {metrics.cohorts.map((cohort) => (
-              <div className="cohort-meter" key={cohort.label}>
-                <div className="meter-label">
-                  <span>{cohort.label}</span>
-                  <strong>{cohort.count} · {cohort.share}%</strong>
-                </div>
-                <div className="meter-track">
-                  <span style={{ width: `${cohort.share}%`, background: cohort.color }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section className="panel">
-          <h2>Work Experience</h2>
-          <div className="mini-stat-row">
-            <div><strong>{metrics.workExperience.averageYears}</strong><span>Avg. years of experience</span></div>
-            <div><strong>{metrics.workExperience.minimumYears}+</strong><span>Years expected for applicants</span></div>
-            {metrics.workExperience.medianSalaryAndBonus && <div><strong>{metrics.workExperience.medianSalaryAndBonus}</strong><span>Median salary and bonus</span></div>}
-          </div>
-        </section>
-        {metrics.testScores.length > 0 && (
-          <section className="panel">
-            <h2>Education & Test Scores</h2>
-            <div className="mini-stat-row">
-              {metrics.testScores.map((score) => (
-                <div key={score.label}><strong>{score.value}</strong><span>{score.label}</span></div>
-              ))}
-            </div>
-          </section>
-        )}
-        {metrics.industryMix.length > 0 && (
-          <section className="panel">
-            <h2>Industry Mix</h2>
-            <div className="mini-stat-row">
-              {metrics.industryMix.map((industry) => (
-                <div key={industry.label}><strong>{industry.value}</strong><span>{industry.label}</span></div>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
-      <p className="muted dashboard-note">Source: <a href={metrics.sourceUrl} target="_blank" rel="noreferrer">{metrics.source}</a>. {metrics.notes.join(' ')}</p>
-    </section>
-  );
+  return <div className="avatar">{initialsFor(profile.fullLegalName)}</div>;
 }
 
-function matchesBioBookFilters(profile: BioBookProfile, filters: DirectoryFilters) {
-  const search = filters.search?.trim().toLowerCase();
-  if (search && !bioBookSearchText(profile).includes(search)) return false;
-  if (filters.cohortCampus && profile.cohortCampus !== filters.cohortCampus) return false;
+function matchesFilters(profile: BioBookProfile, filters: DirectoryFilterState) {
+  const search = filters.search.trim().toLowerCase();
+  if (search && !searchText(profile).includes(search)) return false;
+  if (filters.location && compactJoin([profile.city, profile.stateCountry], ', ') !== filters.location) return false;
   if (filters.industry && profile.industry !== filters.industry) return false;
-  if (filters.location && !`${profile.city} ${profile.stateCountry} ${profile.currentCityOfResidence}`.toLowerCase().includes(filters.location.toLowerCase())) return false;
-  if (filters.classYearFrom && profile.classYear < Number(filters.classYearFrom)) return false;
-  if (filters.classYearTo && profile.classYear > Number(filters.classYearTo)) return false;
-  if (filters.willingToMentor && !profile.willingToMentor) return false;
+  if (filters.functionArea && profile.functionalArea !== filters.functionArea) return false;
+  if (filters.company && profile.currentEmployer !== filters.company) return false;
+  if (filters.classYear && String(profile.classYear) !== filters.classYear) return false;
+  if (filters.interest && !splitList(`${profile.clubsInterestedIn}, ${profile.hobbiesInterests}`).includes(filters.interest)) return false;
+  if (filters.openToMentoring && !profile.willingToMentor) return false;
   return true;
 }
 
-function bioBookSearchText(profile: BioBookProfile) {
+function searchText(profile: BioBookProfile) {
   return [
     profile.fullLegalName,
-    profile.preferredNameNickname,
-    profile.currentEmployer,
     profile.currentTitleRole,
+    profile.currentEmployer,
     profile.industry,
     profile.functionalArea,
     profile.city,
     profile.stateCountry,
-    profile.careerTrajectoryIn3Bullets,
-    profile.companiesYouPreviouslyWorkedAt,
-    profile.postMbaCareerGoal,
     profile.canHelpClassmatesWith,
-    profile.industriesWantToBreakIntoLearn,
+    profile.postMbaCareerGoal,
     profile.clubsInterestedIn,
+    profile.hobbiesInterests,
   ].join(' ').toLowerCase();
+}
+
+function unique(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).sort((left, right) => left.localeCompare(right));
+}
+
+function splitList(value: string) {
+  return value.split(/[,;|]/).map((part) => part.trim()).filter(Boolean);
 }
 
 function compactJoin(values: Array<string | undefined>, separator: string) {
@@ -304,7 +270,19 @@ function initialsFor(name: string) {
     .toUpperCase();
 }
 
-function normalizeUrl(url: string) {
-  if (/^https?:\/\//i.test(url)) return url;
-  return `https://${url}`;
+function valueOr(value?: string) {
+  return value ?? '';
+}
+
+function firstNameFor(name: string) {
+  return name.trim().split(/\s+/)[0] ?? name;
+}
+
+function lastNameFor(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return parts.at(-1) ?? name;
+}
+
+function hasDemoFirstName(profile: BioBookProfile) {
+  return firstNameFor(profile.fullLegalName).toLowerCase() === 'demo';
 }

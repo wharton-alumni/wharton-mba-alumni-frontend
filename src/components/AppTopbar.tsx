@@ -1,0 +1,39 @@
+import { Bell, CalendarDays, Mail, Search } from 'lucide-react';
+import { useAuth } from './AuthContext';
+
+export function AppTopbar({ value = '', onSearch, readOnly = false }: { value?: string; onSearch?: (value: string) => void; readOnly?: boolean }) {
+  const { profile } = useAuth();
+  const initials = profile ? `${profile.firstName[0] ?? ''}${profile.lastName[0] ?? ''}` : 'W';
+
+  return (
+    <header className="app-topbar">
+      <label className="directory-global-search">
+        <Search size={18} />
+        <input
+          value={value}
+          onChange={(event) => onSearch?.(event.target.value)}
+          placeholder="Search Wharton..."
+          readOnly={readOnly}
+        />
+      </label>
+      <div className="app-topbar-actions">
+        <button className="icon-button" aria-label="Notifications"><Bell size={18} /></button>
+        <button className="icon-button" aria-label="Messages"><Mail size={18} /></button>
+        <button className="icon-button" aria-label="Calendar"><CalendarDays size={18} /></button>
+        {profile && (
+          <div className="topbar-profile-pill">
+            {profile.avatarUrl ? (
+              <img className="avatar avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
+            ) : (
+              <div className="avatar">{initials}</div>
+            )}
+            <span>
+              <strong>{profile.firstName}</strong>
+              <small>Wharton 52</small>
+            </span>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}

@@ -3,15 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api } from '../services/api';
 import { useAuth } from '../components/AuthContext';
 import { brandAssets, brandCopy } from '../data/brand';
-import type { BioBookProfile } from '../types/domain';
+import type { OnboardingLookupResponse } from '../types/domain';
 
-type LoginStage = 'lookup' | 'password' | 'signin' | 'forgot';
+type LoginStage = 'lookup' | 'code' | 'password' | 'signin' | 'forgot';
 
 export function LoginPage() {
   const [identifier, setIdentifier] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [matchedProfile, setMatchedProfile] = useState<BioBookProfile | null>(null);
+  const [matchedProfile, setMatchedProfile] = useState<OnboardingLookupResponse | null>(null);
+  const [matchedBioBookProfile, setMatchedBioBookProfile] = useState<string | null>(null);
   const [stage, setStage] = useState<LoginStage>('lookup');
   const [modal, setModal] = useState<{ title: string; body: string; action?: () => void } | null>(null);
   const [error, setError] = useState('');
@@ -19,23 +21,26 @@ export function LoginPage() {
   const { setSession } = useAuth();
   const navigate = useNavigate();
 
-  const universityEmail = `${identifier || 'username'}@wharton.upenn.edu`;
+  const claimEmail = identifier.includes('@') ? identifier : `${identifier || 'username'}@wharton.upenn.edu`;
 
   async function handleLookup(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
     setError('');
+    setMatchedBioBookProfile(null);
     try {
-      const result = await api.lookupBioBook(identifier);
-      if (!result.exists || !result.profile) {
+      const result = await api.lookupOnboarding(identifier);
+      if (!result.exists) {
         setModal({
           title: 'Profile not found',
           body: 'This university email was not found in the WEMBA 52 BioBook data. You can continue by creating a new profile and consenting to store the submitted data.',
-          action: () => navigate('/register', { state: { email: universityEmail, showConsent: true } }),
+          action: () => navigate('/register', { state: { email: claimEmail, showConsent: true } }),
         });
         return;
       }
-      setMatchedProfile(result.profile);
+      setMatchedProfile(result);
+      const bioBookResult = await api.lookupBioBook(identifier);
+      setMatchedBioBookProfile(bioBookResult.profile ? JSON.stringify(bioBookResult.profile) : null);
       if (result.alreadyClaimed) {
         setPassword('');
         setConfirmPassword('');
@@ -45,14 +50,30 @@ export function LoginPage() {
       }
       setModal({
         title: 'Consent to store profile data',
-        body: 'The profile can be prefilled from WEMBA 52 BioBook data. By continuing, you consent to storing this account and profile data for the alumni portal experience.',
-        action: () => {
-          api.recordConsent(identifier, 'biobook-claim');
-          setStage('password');
+        body: 'Your profile may be pre-populated with existing alumni details. By continuing, you agree to allow us to store and use your account and profile information to provide you with access to the alumni portal.',
+        action: async () => {
+          await api.recordConsent(identifier, 'biobook-code-claim');
+          await api.sendOnboardingCode(identifier);
+          setVerificationCode('');
+          setStage('code');
         },
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to verify your BioBook record.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyCode(event: FormEvent) {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await api.verifyOnboardingCode(identifier, verificationCode);
+      setStage('password');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to verify that code.');
     } finally {
       setLoading(false);
     }
@@ -67,9 +88,11 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const session = await api.claimBioBook(identifier, password);
+      const session = await api.claimWithCode(identifier, verificationCode, password);
+      if (matchedBioBookProfile) {
+        localStorage.setItem('wharton.biobookProfile', matchedBioBookProfile);
+      }
       setSession(session.token, session.profile);
-      localStorage.setItem('wharton.biobookProfile', JSON.stringify(session.biobookProfile));
       navigate('/claim-profile');
     } catch (err) {
       if (err instanceof ApiError && (err.status === 409 || err.status === 403)) {
@@ -90,9 +113,9 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const session = await api.login(identifier.includes('@') ? identifier : universityEmail, password);
+      const session = await api.login(identifier.includes('@') ? identifier : claimEmail, password);
       setSession(session.token, session.profile);
-      navigate('/directory');
+      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to log in.');
     } finally {
@@ -122,7 +145,7 @@ export function LoginPage() {
     <section className="auth-page">
       <form
         className="panel auth-panel"
-        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'password' ? handleClaim : stage === 'forgot' ? handleForgotPassword : handleLookup}
+        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'password' ? handleClaim : stage === 'code' ? handleVerifyCode : stage === 'forgot' ? handleForgotPassword : handleLookup}
       >
         <div>
           <img src={brandAssets.executiveMbaLogo} alt="Wharton Executive MBA" className="auth-lockup" />
@@ -139,8 +162,9 @@ export function LoginPage() {
         )}
 
         <p className="muted">
-          {stage === 'lookup' && 'Enter the university email username to check WEMBA 52 BioBook access.'}
-          {stage === 'password' && 'Create a password to claim the prefilled profile.'}
+          {stage === 'lookup' && 'Enter the university email username to claim your profile.'}
+          {stage === 'code' && 'Enter the email verification code sent for this BioBook profile.'}
+          {stage === 'password' && 'Create a password to claim the verified prefilled profile.'}
           {stage === 'signin' && 'Sign in with an existing portal password.'}
           {stage === 'forgot' && 'Send a password reset link to the university email.'}
         </p>
@@ -150,8 +174,8 @@ export function LoginPage() {
           <div className="email-suffix-field">
             <input
               value={identifier}
-              maxLength={stage === 'signin' && identifier.includes('@') ? undefined : 20}
-              onChange={(event) => setIdentifier(event.target.value.slice(0, stage === 'signin' && event.target.value.includes('@') ? undefined : 20))}
+              maxLength={identifier.includes('@') ? undefined : 40}
+              onChange={(event) => setIdentifier(event.target.value.slice(0, event.target.value.includes('@') ? undefined : 40))}
               placeholder="first.last"
               required
             />
@@ -159,24 +183,33 @@ export function LoginPage() {
           </div>
         </label>
 
+        {stage === 'code' && (
+          <>
+            <label>
+              Verification code
+              <input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" minLength={6} maxLength={6} required />
+            </label>
+          </>
+        )}
+
         {(stage === 'password' || stage === 'signin') && (
           <label>
             Password
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required />
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={stage === 'password' ? 8 : 6} required />
           </label>
         )}
 
         {stage === 'password' && (
           <label>
             Confirm password
-            <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={6} required />
+            <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} required />
           </label>
         )}
 
         {error && <p className="form-error">{error}</p>}
 
         <button className="button primary" disabled={loading}>
-          {loading ? 'Working...' : stage === 'lookup' ? 'Continue' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
+          {loading ? 'Working...' : stage === 'lookup' ? 'Continue' : stage === 'code' ? 'Verify code' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
         </button>
 
         <div className="auth-alt-actions">

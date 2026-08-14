@@ -26,6 +26,7 @@ export interface AlumniProfile {
   willingToMentor: boolean;
   hiring: boolean;
   avatarUrl?: string;
+  bioBookProfileJson?: string;
   role: Role;
   approved: boolean;
   createdAt: string;
@@ -59,6 +60,7 @@ export interface BioBookProfile {
   fullLegalName: string;
   preferredNameNickname: string;
   pronouns: string;
+  headshotProfessional?: string;
   cohort: string;
   cohortCampus: CohortCampus;
   hometownWhereYouGrewUp: string;
@@ -95,6 +97,12 @@ export interface BioBookProfile {
   clubsInterestedIn: string;
   willingToHostClassEventInYourCity: string;
   willingToBeGuestSpeakerForClub: string;
+  personalEmailForClassDirectory?: string;
+  mobileNumber?: string;
+  instagramHandle?: string;
+  instagramHandle2?: string;
+  personalWebsiteSubstackPortfolio?: string;
+  militaryVeteran?: string;
   classYear: number;
   hiring: boolean;
 }
@@ -114,10 +122,71 @@ export interface PasswordResetResponse {
   destination: string;
 }
 
+export interface OnboardingLookupResponse {
+  exists: boolean;
+  alreadyClaimed: boolean;
+  fullLegalName?: string;
+  cohort?: string;
+  batch?: string;
+  currentEmployer?: string;
+  currentTitleRole?: string;
+}
+
+export interface SendCodeResponse {
+  message: string;
+  devCode?: string;
+}
+
 export type RegistrationRequest = Omit<
   AlumniProfile,
-  'id' | 'avatarUrl' | 'role' | 'approved' | 'createdAt'
+  'id' | 'avatarUrl' | 'bioBookProfileJson' | 'role' | 'approved' | 'createdAt'
 > & {
   password: string;
   avatarUrl?: string;
+  bioBookProfileJson?: string;
 };
+
+export type IntelligenceCategory =
+  | 'Events'
+  | 'Network'
+  | 'AI & Tech'
+  | 'Healthcare'
+  | 'VC / Startups'
+  | 'Research & Data'
+  | 'Career'
+  | 'Alumni';
+
+export type AttendanceMode = 'Virtual' | 'In-person' | 'Hybrid' | 'Unknown';
+
+export interface IntelligenceHubItem {
+  source: string;
+  category: IntelligenceCategory;
+  subCategory?: string;
+  title: string;
+  description?: string;
+  eventDate?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  city?: string;
+  state?: string;
+  attendanceMode: AttendanceMode;
+  club?: string;
+  speaker?: string;
+  industry?: string;
+  registrationUrl?: string;
+  sourceUrl: string;
+  imageUrl?: string;
+  lastScrapedAt: string;
+}
+
+export type EventRsvpStatus = 'JOINED' | 'INTERESTED' | 'CANCELLED';
+
+export interface EventRsvp {
+  eventId: string;
+  profileId: string;
+  status: EventRsvpStatus;
+  joinedCount: number;
+  interestedCount: number;
+  updatedAt: string;
+}
