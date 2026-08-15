@@ -36,10 +36,12 @@ export function EventsPage() {
   const { profile } = useAuth();
 
   useEffect(() => {
-    api.getEvents('APPROVED').then(setEvents);
+    api.getEvents('APPROVED')
+      .then(setEvents)
+      .catch(() => setEvents([]));
     api.getMyEventRsvps().then((items) => {
       setRsvps(Object.fromEntries(items.map((item) => [item.eventId, item])));
-    });
+    }).catch(() => setRsvps({}));
   }, []);
 
   const visibleEvents = useMemo(() => {
@@ -132,10 +134,14 @@ export function EventsPage() {
 function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRsvp; onRsvp: (status: EventRsvpStatus) => Promise<void> }) {
   const [saving, setSaving] = useState<EventRsvpStatus | null>(null);
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [error, setError] = useState('');
   async function handleRsvp(status: EventRsvpStatus) {
     setSaving(status);
+    setError('');
     try {
       await onRsvp(status);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update your RSVP. Please try again.');
     } finally {
       setSaving(null);
     }
@@ -191,6 +197,7 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
           </button>
         )}
       </div>
+      {error && <div className="error-banner event-rsvp-error" role="alert">{error}</div>}
       {confirmWithdraw && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="panel modal-panel">

@@ -13,6 +13,8 @@ import type {
   OnboardingLookupResponse,
   PasswordResetResponse,
   RegistrationRequest,
+  SendCodeResponse,
+  VerifyCodeResponse,
 } from '../types/domain';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.whartonemba.com/api';
@@ -80,6 +82,20 @@ export const api = {
       skipAuth: true,
     }),
 
+  sendOnboardingCode: async (email: string): Promise<SendCodeResponse> =>
+    request<SendCodeResponse>('/onboarding/send-code', {
+      method: 'POST',
+      body: JSON.stringify({ email: toVerificationEmail(email) }),
+      skipAuth: true,
+    }),
+
+  verifyOnboardingCode: async (email: string, code: string): Promise<VerifyCodeResponse> =>
+    request<VerifyCodeResponse>('/onboarding/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ email: toVerificationEmail(email), code }),
+      skipAuth: true,
+    }),
+
   claimOnboarding: async (email: string, password: string): Promise<LoginResponse> => {
     const response = await request<LoginResponse>('/onboarding/claim', {
       method: 'POST',
@@ -104,15 +120,24 @@ export const api = {
   },
 
   sendPasswordReset: async (email: string): Promise<PasswordResetResponse> => {
+    const destination = toUniversityEmail(email);
     await request('/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email: toUniversityEmail(email) }),
+      body: JSON.stringify({ email: destination }),
       skipAuth: true,
     });
     return {
       sent: true,
-      destination: toUniversityEmail(email),
+      destination,
     };
+  },
+
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    await request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+      skipAuth: true,
+    });
   },
 
   claimBioBook: async (email: string, password: string): Promise<BioBookClaimResponse> => {
@@ -244,10 +269,15 @@ async function request<T = unknown>(
     if (token) headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new ApiError(0, 'Unable to reach the server. Please check your connection and try again.');
+  }
 
   if (!response.ok) {
     const message = await response.text();
@@ -256,7 +286,7 @@ async function request<T = unknown>(
       redirectToLogin();
       throw new Error('Please login again, your session has expired.');
     }
-    throw new ApiError(response.status, message || `Request failed with ${response.status}`);
+    throw new ApiError(response.status, friendlyErrorMessage(response.status, path, message));
   }
 
   if (response.status === 204) {
@@ -344,6 +374,11 @@ function toClaimEmail(value: string) {
   const trimmed = value.trim().toLowerCase();
   if (trimmed.includes('@')) return trimmed;
   return `${trimmed}@${UNIVERSITY_DOMAIN}`;
+}
+
+function toVerificationEmail(value: string) {
+  const email = toClaimEmail(value);
+  return email.startsWith('demo') ? 'somalchakrabortyy@gmail.com' : email;
 }
 
 function toJobListing(job: BackendJobPost, fallback?: Partial<JobListing>): JobListing {

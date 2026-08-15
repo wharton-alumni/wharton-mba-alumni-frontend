@@ -45,7 +45,7 @@ interface ClassMetrics {
 
 const metrics = (classMetrics as Record<string, ClassMetrics>)["WEMBA'52"];
 const actionLinks = [
-  { label: 'Search Directory', to: '/directory', icon: Search },
+  { label: 'Open Directory', to: '/directory', icon: UsersRound },
   { label: 'Find Classmates', to: '/directory', icon: UsersRound },
   { label: 'Register for an Event', to: '/events', icon: CalendarDays },
   { label: 'Update Profile', to: '/profile/edit', icon: UserPlus },

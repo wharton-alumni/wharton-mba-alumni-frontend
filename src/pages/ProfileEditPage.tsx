@@ -51,8 +51,8 @@ export function ProfileEditPage() {
       setError('Please choose an image file for your profile photo.');
       return;
     }
-    if (file.size > 2_000_000) {
-      setError('Please choose an image smaller than 2 MB.');
+    if (file.size > 1_000_000) {
+      setError('Please choose an image smaller than 1 MB.');
       return;
     }
     try {

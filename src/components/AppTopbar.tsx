@@ -1,7 +1,7 @@
 import { Search } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
-export function AppTopbar({ value = '', onSearch, readOnly = false }: { value?: string; onSearch?: (value: string) => void; readOnly?: boolean }) {
+export function AppTopbar({ value = '', onSearch }: { value?: string; onSearch?: (value: string) => void }) {
   const { profile } = useAuth();
   const initials = profile ? `${profile.firstName[0] ?? ''}${profile.lastName[0] ?? ''}` : 'W';
 
@@ -13,7 +13,6 @@ export function AppTopbar({ value = '', onSearch, readOnly = false }: { value?: 
           value={value}
           onChange={(event) => onSearch?.(event.target.value)}
           placeholder="Search Wharton..."
-          readOnly={readOnly}
         />
       </label>
       <div className="app-topbar-actions">

@@ -1,10 +1,23 @@
 import { Bell, Newspaper, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { AppTopbar } from '../components/AppTopbar';
 
+const announcementSections = [
+  { icon: Newspaper, title: 'Program News' },
+  { icon: Bell, title: 'Community Notices' },
+  { icon: Sparkles, title: 'Network Highlights' },
+];
+
 export function AnnouncementPage() {
+  const [search, setSearch] = useState('');
+  const filteredSections = useMemo(
+    () => announcementSections.filter((section) => section.title.toLowerCase().includes(search.trim().toLowerCase())),
+    [search],
+  );
+
   return (
     <section className="directory-page announcement-page">
-      <AppTopbar readOnly />
+      <AppTopbar value={search} onSearch={setSearch} />
 
       <div className="directory-header">
         <div>
@@ -26,9 +39,10 @@ export function AnnouncementPage() {
         </article>
 
         <section className="announcement-grid" aria-label="Upcoming announcement sections">
-          <AnnouncementPlaceholder icon={Newspaper} title="Program News" />
-          <AnnouncementPlaceholder icon={Bell} title="Community Notices" />
-          <AnnouncementPlaceholder icon={Sparkles} title="Network Highlights" />
+          {filteredSections.map((section) => (
+            <AnnouncementPlaceholder key={section.title} icon={section.icon} title={section.title} />
+          ))}
+          {filteredSections.length === 0 && <p className="muted">No announcement sections match that search.</p>}
         </section>
       </div>
     </section>

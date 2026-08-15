@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CalendarDays, CheckCircle2, Clock, MapPin, Search, Star, UserRound, UsersRound } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock, MapPin, Star, UserRound, UsersRound } from 'lucide-react';
 import { AppTopbar } from '../components/AppTopbar';
 import { api } from '../services/api';
 import type { AlumniEvent, EventParticipant, EventRsvp, EventRsvpStatus } from '../types/domain';
@@ -12,16 +12,20 @@ export function EventDetailPage() {
   const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [saving, setSaving] = useState<EventRsvpStatus | null>(null);
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.getEvents('APPROVED').then(setEvents);
+    api.getEvents('APPROVED')
+      .then(setEvents)
+      .catch(() => setEvents([]));
     api.getMyEventRsvps().then((items) => {
-      setRsvps(Object.fromEntries(items.map((item) => [item.eventId, item])));
+      const merged = Object.fromEntries(items.map((item) => [item.eventId, item]));
+      setRsvps(merged);
       if (eventId) {
-        const currentRsvp = items.find((item) => item.eventId === eventId);
+        const currentRsvp = merged[eventId];
         if (currentRsvp?.participants) setParticipants(currentRsvp.participants);
       }
-    });
+    }).catch(() => setRsvps({}));
     if (eventId) api.getEventParticipants(eventId).then(setParticipants).catch(() => undefined);
   }, [eventId]);
 
@@ -33,6 +37,7 @@ export function EventDetailPage() {
   async function handleRsvp(status: EventRsvpStatus) {
     if (!eventId) return;
     setSaving(status);
+    setError('');
     try {
       const updated = await api.updateEventRsvp(eventId, status);
       setRsvps((current) => ({ ...current, [eventId]: updated }));
@@ -42,6 +47,8 @@ export function EventDetailPage() {
         const nextParticipants = await api.getEventParticipants(eventId).catch(() => []);
         setParticipants(nextParticipants);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update your RSVP. Please try again.');
     } finally {
       setSaving(null);
     }
@@ -50,7 +57,7 @@ export function EventDetailPage() {
   if (!event) {
     return (
       <section className="directory-page event-detail-page">
-        <AppTopbar readOnly />
+        <AppTopbar />
         <div className="empty-state-card">
           <span><CalendarDays size={28} /></span>
           <h2>Event not found</h2>
@@ -65,7 +72,7 @@ export function EventDetailPage() {
 
   return (
     <section className="directory-page event-detail-page">
-      <AppTopbar readOnly />
+      <AppTopbar />
       <div className="profile-breadcrumb">
         <Link to="/events">Events</Link>
         <span>/</span>
@@ -107,6 +114,7 @@ export function EventDetailPage() {
                   <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
                 </button>
               </div>
+              {error && <div className="error-banner event-rsvp-error" role="alert">{error}</div>}
             </div>
           </article>
         </main>

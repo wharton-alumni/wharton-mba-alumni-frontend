@@ -6,16 +6,17 @@ import { PasswordField } from '../components/PasswordField';
 import { brandAssets, brandCopy } from '../data/brand';
 import type { OnboardingLookupResponse } from '../types/domain';
 
-type LoginStage = 'lookup' | 'password' | 'signin' | 'forgot';
+type LoginStage = 'lookup' | 'code' | 'password' | 'signin' | 'forgot';
 
 export function LoginPage() {
   const [identifier, setIdentifier] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [matchedProfile, setMatchedProfile] = useState<OnboardingLookupResponse | null>(null);
   const [matchedBioBookProfile, setMatchedBioBookProfile] = useState<string | null>(null);
   const [stage, setStage] = useState<LoginStage>('lookup');
-  const [modal, setModal] = useState<{ title: string; body: string; action?: () => void } | null>(null);
+  const [modal, setModal] = useState<{ title: string; body: string; actionLabel?: string; action?: () => void } | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { setSession } = useAuth();
@@ -51,15 +52,50 @@ export function LoginPage() {
       setModal({
         title: 'Consent to store profile data',
         body: 'Your profile may be pre-populated with existing alumni details. By continuing, you agree to allow us to store and use your account and profile information to provide you with access to the alumni portal.',
+        actionLabel: 'Send verification code',
         action: async () => {
           await api.recordConsent(identifier, 'biobook-claim');
+          await handleSendVerificationCode();
           setPassword('');
           setConfirmPassword('');
-          setStage('password');
         },
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to verify your BioBook record.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSendVerificationCode() {
+    setLoading(true);
+    setError('');
+    try {
+      await api.sendOnboardingCode(identifier);
+      setVerificationCode('');
+      setStage('code');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to send verification code.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyCode(event: FormEvent) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(verificationCode.trim())) {
+      setError('Enter the 6-digit verification code sent to your email.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await api.verifyOnboardingCode(identifier, verificationCode.trim());
+      setPassword('');
+      setConfirmPassword('');
+      setStage('password');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to verify the code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -131,7 +167,7 @@ export function LoginPage() {
     <section className="auth-page">
       <form
         className="panel auth-panel"
-        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'password' ? handleClaim : stage === 'forgot' ? handleForgotPassword : handleLookup}
+        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'password' ? handleClaim : stage === 'code' ? handleVerifyCode : stage === 'forgot' ? handleForgotPassword : handleLookup}
       >
         <div>
           <img src={brandAssets.executiveMbaLogo} alt="Wharton Executive MBA" className="auth-lockup" />
@@ -149,6 +185,7 @@ export function LoginPage() {
 
         <p className="muted">
           {stage === 'lookup' && 'Enter the university email username to claim your profile.'}
+          {stage === 'code' && 'Enter the 6-digit verification code sent to your university email.'}
           {stage === 'password' && 'Create a password to claim the prefilled profile.'}
           {stage === 'signin' && 'Sign in with an existing portal password.'}
           {stage === 'forgot' && 'Send a password reset link to the university email.'}
@@ -167,6 +204,21 @@ export function LoginPage() {
             {!identifier.includes('@') && <span>@wharton.upenn.edu</span>}
           </div>
         </label>
+
+        {stage === 'code' && (
+          <label>
+            Verification code
+            <input
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={verificationCode}
+              onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="123456"
+              required
+            />
+          </label>
+        )}
 
         {(stage === 'password' || stage === 'signin') && (
           <PasswordField
@@ -191,8 +243,14 @@ export function LoginPage() {
         {error && <p className="form-error">{error}</p>}
 
         <button className="button primary" disabled={loading}>
-          {loading ? 'Working...' : stage === 'lookup' ? 'Continue' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
+          {loading ? 'Working...' : stage === 'lookup' ? 'Continue' : stage === 'code' ? 'Verify code' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
         </button>
+
+        {stage === 'code' && (
+          <button type="button" className="button ghost" disabled={loading} onClick={handleSendVerificationCode}>
+            Send verification code again
+          </button>
+        )}
 
         <div className="auth-alt-actions">
           <button type="button" className="button ghost" onClick={() => { setStage(stage === 'signin' ? 'lookup' : 'signin'); setError(''); }}>
@@ -220,7 +278,7 @@ export function LoginPage() {
                   action?.();
                 }}
               >
-                Continue
+                {modal.actionLabel ?? 'Continue'}
               </button>
               <button className="button ghost" onClick={() => setModal(null)}>Cancel</button>
             </div>

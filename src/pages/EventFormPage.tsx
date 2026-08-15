@@ -15,6 +15,7 @@ export function EventFormPage() {
     location: '',
     externalLink: '',
     imageUrl: '',
+    onlyMyBatchCanJoin: false,
   });
 
   async function handleSubmit(event: FormEvent) {
@@ -31,7 +32,7 @@ export function EventFormPage() {
           <p className="eyebrow">Community submission</p>
           <h1>Submit an alumni event</h1>
         </div>
-        {submitted && <div className="success-banner">Your event has been submitted and is pending administrator approval.</div>}
+        {submitted && <div className="success-banner">Your event has been posted to upcoming events.</div>}
         <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required /></label>
         <label>Category<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as EventCategory })}>{eventCategories.map((category) => <option key={category}>{category}</option>)}</select></label>
         <label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} required /></label>
@@ -39,7 +40,15 @@ export function EventFormPage() {
         <label>Location<input value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} required /></label>
         <label>External link<input type="url" value={form.externalLink} onChange={(event) => setForm({ ...form, externalLink: event.target.value })} /></label>
         <label>Image URL<input type="url" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} /></label>
-        <button className="button primary">Submit for approval</button>
+        <label className="toggle-inline">
+          <input
+            type="checkbox"
+            checked={Boolean(form.onlyMyBatchCanJoin)}
+            onChange={(event) => setForm({ ...form, onlyMyBatchCanJoin: event.target.checked })}
+          />
+          Only my batch can join
+        </label>
+        <button className="button primary">Post event</button>
       </form>
     </section>
   );

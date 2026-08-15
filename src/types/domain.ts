@@ -44,6 +44,8 @@ export interface AlumniEvent {
   postedById: string;
   postedByName: string;
   postedByCohort: CohortCampus;
+  onlyMyBatchCanJoin?: boolean;
+  allowedClassYear?: number;
   status: EventStatus;
   createdAt: string;
 }
@@ -130,6 +132,14 @@ export interface OnboardingLookupResponse {
   batch?: string;
   currentEmployer?: string;
   currentTitleRole?: string;
+}
+
+export interface SendCodeResponse {
+  message: string;
+}
+
+export interface VerifyCodeResponse {
+  message: string;
 }
 
 export type RegistrationRequest = Omit<

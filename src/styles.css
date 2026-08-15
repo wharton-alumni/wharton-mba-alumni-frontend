@@ -57,6 +57,7 @@ textarea {
 .password-toggle {
   position: absolute;
   top: 50%;
+  transform: translateY(-50%);
   right: 0.45rem;
   display: grid;
   place-items: center;
@@ -68,6 +69,11 @@ textarea {
   color: #475569;
   background: transparent;
   cursor: pointer;
+}
+
+.password-field-wrap {
+  display: grid;
+  gap: 0.35rem;
 }
 
 .password-toggle:hover,
@@ -214,7 +220,10 @@ main {
 .auth-page {
   display: grid;
   place-items: center;
+  width: 100%;
   min-height: calc(100vh - 72px);
+  margin: 0;
+  padding: 2rem 1rem;
   background-image:
     linear-gradient(90deg, rgba(1, 31, 91, 0.88), rgba(1, 31, 91, 0.32)),
     url("https://executivemba.wharton.upenn.edu/wp-content/uploads/2023/08/all-three-header-1920px_v2.png");
@@ -396,10 +405,18 @@ main {
   background: #e8eef6;
 }
 
-.form-error {
+.form-error,
+.error-banner {
   margin: 0;
   color: #990000;
   font-weight: 800;
+}
+
+.error-banner {
+  border-left: 4px solid #b00000;
+  border-radius: 6px;
+  padding: 0.75rem 0.9rem;
+  background: #fee2e2;
 }
 
 .dev-code {
@@ -469,6 +486,56 @@ main {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.field-label-text {
+  display: inline-block;
+}
+
+.required-mark,
+.field-error {
+  color: #b00000;
+}
+
+.field-error {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.registration-headshot-field {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 0.9rem;
+  align-items: center;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.registration-headshot-preview {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 50%;
+  color: #64748b;
+  background: #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.registration-headshot-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.registration-headshot-controls {
+  display: grid;
+  gap: 0.6rem;
 }
 
 .wide-field {
@@ -1090,23 +1157,24 @@ main {
 }
 
 .side-brand-row {
-  position: relative;
-  display: block;
-  padding-top: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-height: 54px;
 }
 
 .side-brand {
   display: grid;
   gap: 0.65rem;
+  align-items: center;
+  justify-items: start;
   color: #fff;
   font-weight: 900;
-  text-align: center;
+  text-align: left;
 }
 
 .side-collapse-button {
-  position: absolute;
-  top: 0;
-  right: 0;
   z-index: 4;
   display: inline-grid;
   place-items: center;
@@ -1125,22 +1193,59 @@ main {
 }
 
 .side-brand img {
-  width: 170px;
-  max-width: 100%;
-  justify-self: center;
+  width: 120px;
+  max-width: 120px;
   border-radius: 6px;
-  padding: 0.5rem 0.65rem;
+  padding: 0.35rem 0.45rem;
   background: #fff;
+}
+
+.side-brand > span:not(.side-brand-logo-swap) {
+  max-width: 150px;
+  line-height: 1.05;
 }
 
 .sidebar-collapsed .side-brand {
   justify-items: center;
 }
 
-.sidebar-collapsed .side-collapse-button {
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
+.side-brand-collapsed-trigger {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.side-brand-logo-swap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+}
+
+.side-brand-expand-icon {
+  position: absolute;
+  opacity: 0;
+  color: #fff;
+  transition: opacity 160ms ease;
+}
+
+.side-brand-collapsed-trigger:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.side-brand-collapsed-trigger:hover img {
+  opacity: 0;
+}
+
+.side-brand-collapsed-trigger:hover .side-brand-expand-icon {
+  opacity: 1;
 }
 
 .sidebar-collapsed .side-brand img {
@@ -1148,12 +1253,16 @@ main {
   padding: 0.25rem;
 }
 
-.sidebar-collapsed .side-brand span,
+.sidebar-collapsed .side-brand > span:not(.side-brand-logo-swap),
 .sidebar-collapsed .side-links a span,
 .sidebar-collapsed .side-profile strong,
-.sidebar-collapsed .side-profile span,
-.sidebar-collapsed .side-profile button {
+.sidebar-collapsed .side-profile > span,
+.sidebar-collapsed .logout-label {
   display: none;
+}
+
+.sidebar-collapsed .side-brand-logo-swap {
+  display: grid;
 }
 
 .side-links {
@@ -1194,9 +1303,31 @@ main {
   text-align: center;
 }
 
+.side-profile .button.ghost {
+  color: #0f172a !important;
+  background: #fff;
+}
+
+.side-profile .button.ghost .logout-label {
+  color: #0f172a;
+}
+
+.side-profile .button.ghost:hover {
+  color: #fff;
+  background: var(--wharton-red);
+}
+
 .sidebar-collapsed .side-profile {
   border-color: transparent;
   padding-inline: 0;
+}
+
+.sidebar-collapsed .side-profile button {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
 }
 
 .sidebar-collapsed .side-profile .avatar {
@@ -1251,6 +1382,11 @@ main {
   border-bottom: 1px solid #e2e8f0;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
+}
+
+.dashboard-topbar-no-search {
+  grid-template-columns: 1fr;
+  justify-items: end;
 }
 
 .dashboard-search {
@@ -1605,7 +1741,8 @@ main {
 .directory-global-search svg {
   position: absolute;
   right: 0.85rem;
-  bottom: 0.78rem;
+  top: 50%;
+  transform: translateY(-50%);
   color: #334155;
 }
 
@@ -1623,7 +1760,10 @@ main {
   gap: 0.9rem;
   align-items: center;
   justify-content: space-between;
+  height: 70px;
   min-height: 70px;
+  max-height: 70px;
+  overflow: hidden;
   border-bottom: 1px solid var(--border-subtle);
   padding: 0.765rem 1.26rem;
   background: rgba(255, 255, 255, 0.96);
@@ -2061,30 +2201,42 @@ main {
 
 .event-segmented-tabs {
   display: inline-flex;
+  align-items: center;
   gap: 0.25rem;
   width: fit-content;
+  height: 42px;
   margin: 0 1.4rem;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  padding: 0.25rem;
+  padding: 0.12rem;
   background: #fff;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .event-segmented-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
   border: 0;
   border-radius: 6px;
-  padding: 0.55rem 0.8rem;
+  padding: 0.25rem 0.7rem;
   color: #475569;
   background: transparent;
   cursor: pointer;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .event-segmented-tabs button.active,
 .event-segmented-tabs button:hover {
   color: #fff;
   background: var(--wharton-red);
+}
+
+.event-rsvp-error {
+  margin: 0 1rem 1rem;
 }
 
 .event-card-grid,
@@ -2793,7 +2945,7 @@ main {
   color: #001c4c;
 }
 
-@media (max-width: 920px) {
+@media (max-width: 1180px) {
   .sidebar-shell {
     grid-template-columns: 1fr;
   }
@@ -2854,6 +3006,21 @@ main {
     grid-template-columns: 1fr;
   }
 
+  .directory-page,
+  .dashboard-home,
+  .alumni-profile-page {
+    min-width: 0;
+  }
+
+  .directory-header,
+  .directory-workspace,
+  .app-topbar,
+  .dashboard-topbar,
+  .profile-breadcrumb,
+  .directory-results-panel {
+    min-width: 0;
+  }
+
   .product-hero {
     background-image:
       linear-gradient(rgba(1, 31, 91, 0.86), rgba(1, 31, 91, 0.68)),
@@ -2905,7 +3072,7 @@ main {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1180px) {
   .sidebar-shell,
   .sidebar-shell.sidebar-collapsed {
     grid-template-columns: 1fr;

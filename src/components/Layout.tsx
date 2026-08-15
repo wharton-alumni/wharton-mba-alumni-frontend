@@ -105,18 +105,35 @@ export function Layout() {
       )}
       {showSidebar && profile && <aside className="side-nav">
         <div className="side-brand-row">
-          <NavLink to="/dashboard" className="side-brand">
-            <img src={brandAssets.whartonLogo} alt="Wharton" />
-            <span>{brandCopy.productName}</span>
-          </NavLink>
-          <button
-            className="side-collapse-button"
-            type="button"
-            aria-label={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-            onClick={() => setSidebarCollapsed((current) => !current)}
-          >
-            {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-          </button>
+          {sidebarCollapsed ? (
+            <button
+              className="side-brand side-brand-collapsed-trigger"
+              type="button"
+              aria-label="Expand navigation"
+              title="Expand navigation"
+              onClick={() => setSidebarCollapsed(false)}
+            >
+              <span className="side-brand-logo-swap">
+                <img src={brandAssets.whartonLogo} alt="Wharton" />
+                <PanelLeftOpen className="side-brand-expand-icon" size={22} />
+              </span>
+            </button>
+          ) : (
+            <>
+              <NavLink to="/dashboard" className="side-brand">
+                <img src={brandAssets.whartonLogo} alt="Wharton" />
+                <span>{brandCopy.productName}</span>
+              </NavLink>
+              <button
+                className="side-collapse-button"
+                type="button"
+                aria-label="Collapse navigation"
+                onClick={() => setSidebarCollapsed(true)}
+              >
+                <PanelLeftClose size={18} />
+              </button>
+            </>
+          )}
         </div>
         <nav className="side-links">
           {links.map(({ to, label, icon: Icon }) => (
@@ -142,9 +159,10 @@ export function Layout() {
           <span>WEMBA {profile.classYear}</span>
           <button
             className="button ghost compact"
+            title="Log out"
             onClick={handleLogout}
           >
-            <LogOut size={16} /> Log out
+            <LogOut size={16} /> <span className="logout-label">Log out</span>
           </button>
         </div>
       </aside>}
