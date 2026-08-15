@@ -143,6 +143,24 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  uploadProfilePhoto: async (file: File): Promise<{ key: string; url: string }> => {
+    const token = getToken();
+    if (!token) throw new ApiError(401, 'Please log in to continue.');
+    const body = new FormData();
+    body.set('file', file);
+    const response = await fetch(`${API_BASE_URL}/headshots/me`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body,
+    });
+    if (!response.ok) {
+      throw new ApiError(response.status, friendlyErrorMessage(response.status, '/headshots/me', await response.text()));
+    }
+    return response.json() as Promise<{ key: string; url: string }>;
+  },
+
   getProfiles: async (filters: DirectoryFilters = {}): Promise<AlumniProfile[]> => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
@@ -288,6 +306,32 @@ function clearSession() {
 function redirectToLogin() {
   if (window.location.pathname !== '/login') {
     window.location.assign('/login');
+  }
+}
+
+function friendlyErrorMessage(status: number, path: string, body: string) {
+  if (path.includes('/auth/login') && status === 401) {
+    return 'Invalid email or password. Please try again.';
+  }
+  if (status === 400) return 'Please check the information entered and try again.';
+  if (status === 401) return 'Please log in to continue.';
+  if (status === 403) return 'You do not have permission to complete this action.';
+  if (status === 404) return 'We could not find the requested item.';
+  if (status === 409) return 'This record already exists or has already been claimed.';
+  if (status >= 500) return 'Something went wrong on the server. Please try again shortly.';
+
+  const parsedMessage = extractBackendMessage(body);
+  return parsedMessage || 'Unable to complete the request. Please try again.';
+}
+
+function extractBackendMessage(body: string) {
+  if (!body) return '';
+  try {
+    const parsed = JSON.parse(body) as { message?: unknown; error?: unknown };
+    const message = typeof parsed.message === 'string' ? parsed.message : typeof parsed.error === 'string' ? parsed.error : '';
+    return message && !message.startsWith('{') ? message : '';
+  } catch {
+    return body.trim().startsWith('{') ? '' : body.trim();
   }
 }
 

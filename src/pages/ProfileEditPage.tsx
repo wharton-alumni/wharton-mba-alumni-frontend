@@ -45,23 +45,23 @@ export function ProfileEditPage() {
     updateDetail('headshotProfessional', value);
   }
 
-  function handlePhotoUpload(file?: File) {
+  async function handlePhotoUpload(file?: File) {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setError('Please choose an image file for your profile photo.');
       return;
     }
-    if (file.size > 750_000) {
-      setError('Please choose an image smaller than 750 KB.');
+    if (file.size > 2_000_000) {
+      setError('Please choose an image smaller than 2 MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
+    try {
       setError('');
-      updatePhoto(String(reader.result));
-    };
-    reader.onerror = () => setError('Unable to read that image file.');
-    reader.readAsDataURL(file);
+      const upload = await api.uploadProfilePhoto(file);
+      updatePhoto(upload.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to upload that image file.');
+    }
   }
 
   return (
