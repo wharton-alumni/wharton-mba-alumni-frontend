@@ -2,6 +2,7 @@ import { type KeyboardEvent, useEffect, useMemo, useState } from 'react';
 import { BriefcaseBusiness, Building2, Globe2, Grid2X2, List, MapPin, MoreVertical, Search, UsersRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppTopbar } from '../components/AppTopbar';
+import { Avatar as FallbackAvatar } from '../components/Avatar';
 import { allBatches } from '../data/batches';
 import { api } from '../services/api';
 import type { BioBookProfile } from '../types/domain';
@@ -236,10 +237,7 @@ function DirectoryTile({ profile }: { profile: BioBookProfile }) {
 }
 
 function Avatar({ profile }: { profile: BioBookProfile }) {
-  if (profile.headshotProfessional) {
-    return <img className="avatar avatar-image" src={profile.headshotProfessional} alt={profile.fullLegalName} />;
-  }
-  return <div className="avatar">{initialsFor(profile.fullLegalName)}</div>;
+  return <FallbackAvatar name={profile.fullLegalName} src={profile.headshotProfessional} />;
 }
 
 function matchesFilters(profile: BioBookProfile, filters: DirectoryFilterState) {

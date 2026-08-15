@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarDays, CheckCircle2, Clock, MapPin, Star, UserRound, UsersRound } from 'lucide-react';
 import { AppTopbar } from '../components/AppTopbar';
+import { Avatar } from '../components/Avatar';
 import { api } from '../services/api';
 import type { AlumniEvent, EventParticipant, EventRsvp, EventRsvpStatus } from '../types/domain';
+
+const EXTERNAL_POSTER_ID = '00000000-0000-0000-0000-000000000034';
 
 export function EventDetailPage() {
   const { eventId } = useParams();
@@ -33,6 +36,7 @@ export function EventDetailPage() {
   const rsvp = eventId ? rsvps[eventId] : undefined;
   const joined = rsvp?.status === 'JOINED';
   const interested = rsvp?.status === 'INTERESTED';
+  const externalEvent = event?.postedById === EXTERNAL_POSTER_ID;
 
   async function handleRsvp(status: EventRsvpStatus) {
     if (!eventId) return;
@@ -96,30 +100,36 @@ export function EventDetailPage() {
                 <span><UserRound size={15} /> {event.postedByName} · {event.postedByCohort}</span>
               </div>
               <div className="event-footer-actions">
-                <button
-                  className="button primary compact"
-                  type="button"
-                  disabled={saving === 'JOINED' || saving === 'CANCELLED'}
-                  onClick={() => {
-                    if (joined) {
-                      setConfirmWithdraw(true);
-                      return;
-                    }
-                    handleRsvp('JOINED');
-                  }}
-                >
-                  <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : joined ? 'Joined' : 'Join Event'}
-                </button>
-                <button className="button ghost compact" type="button" disabled={interested || saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
-                  <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
-                </button>
+                {externalEvent && event.externalLink ? (
+                  <a className="button primary compact" href={event.externalLink} target="_blank" rel="noreferrer">Register on Wharton</a>
+                ) : (
+                  <>
+                    <button
+                      className="button primary compact"
+                      type="button"
+                      disabled={saving === 'JOINED' || saving === 'CANCELLED'}
+                      onClick={() => {
+                        if (joined) {
+                          setConfirmWithdraw(true);
+                          return;
+                        }
+                        handleRsvp('JOINED');
+                      }}
+                    >
+                      <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : joined ? 'Joined' : 'Join Event'}
+                    </button>
+                    <button className="button ghost compact" type="button" disabled={interested || saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
+                      <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
+                    </button>
+                  </>
+                )}
               </div>
               {error && <div className="error-banner event-rsvp-error" role="alert">{error}</div>}
             </div>
           </article>
         </main>
 
-        <aside className="event-participants-panel">
+        {!externalEvent && <aside className="event-participants-panel">
           <div className="panel-heading">
             <h2>Participants</h2>
             <span className="badge">{participants.length}</span>
@@ -128,11 +138,7 @@ export function EventDetailPage() {
             <div className="participant-list">
               {participants.map((participant) => (
                 <div className="participant-row" key={participant.profileId}>
-                  {participant.avatarUrl ? (
-                    <img className="avatar avatar-image" src={participant.avatarUrl} alt={participant.fullName} />
-                  ) : (
-                    <div className="avatar">{initialsFor(participant.fullName)}</div>
-                  )}
+                  <Avatar name={participant.fullName} src={participant.avatarUrl} />
                   <div>
                     <strong>{participant.fullName}</strong>
                     <span>{participant.currentTitle} at {participant.currentCompany}</span>
@@ -147,7 +153,7 @@ export function EventDetailPage() {
               <p>No participants have joined yet.</p>
             </div>
           )}
-        </aside>
+        </aside>}
       </div>
       {confirmWithdraw && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">

@@ -85,14 +85,14 @@ export const api = {
   sendOnboardingCode: async (email: string): Promise<SendCodeResponse> =>
     request<SendCodeResponse>('/onboarding/send-code', {
       method: 'POST',
-      body: JSON.stringify({ email: toVerificationEmail(email) }),
+      body: JSON.stringify({ email: toClaimEmail(email) }),
       skipAuth: true,
     }),
 
   verifyOnboardingCode: async (email: string, code: string): Promise<VerifyCodeResponse> =>
     request<VerifyCodeResponse>('/onboarding/verify-code', {
       method: 'POST',
-      body: JSON.stringify({ email: toVerificationEmail(email), code }),
+      body: JSON.stringify({ email: toClaimEmail(email), code }),
       skipAuth: true,
     }),
 
@@ -374,11 +374,6 @@ function toClaimEmail(value: string) {
   const trimmed = value.trim().toLowerCase();
   if (trimmed.includes('@')) return trimmed;
   return `${trimmed}@${UNIVERSITY_DOMAIN}`;
-}
-
-function toVerificationEmail(value: string) {
-  const email = toClaimEmail(value);
-  return email.startsWith('demo') ? 'somalchakrabortyy@gmail.com' : email;
 }
 
 function toJobListing(job: BackendJobPost, fallback?: Partial<JobListing>): JobListing {

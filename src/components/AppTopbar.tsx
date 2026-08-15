@@ -1,9 +1,9 @@
 import { Search } from 'lucide-react';
+import { Avatar } from './Avatar';
 import { useAuth } from './AuthContext';
 
 export function AppTopbar({ value = '', onSearch }: { value?: string; onSearch?: (value: string) => void }) {
   const { profile } = useAuth();
-  const initials = profile ? `${profile.firstName[0] ?? ''}${profile.lastName[0] ?? ''}` : 'W';
 
   return (
     <header className="app-topbar">
@@ -18,11 +18,7 @@ export function AppTopbar({ value = '', onSearch }: { value?: string; onSearch?:
       <div className="app-topbar-actions">
         {profile && (
           <div className="topbar-profile-pill">
-            {profile.avatarUrl ? (
-              <img className="avatar avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
-            ) : (
-              <div className="avatar">{initials}</div>
-            )}
+            <Avatar name={`${profile.firstName} ${profile.lastName}`} src={profile.avatarUrl} />
             <span>
               <strong>{profile.firstName}</strong>
               <small>Wharton 52</small>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Bell, BriefcaseBusiness, CalendarDays, LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Search, ShieldCheck, UserRound, X } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Avatar } from './Avatar';
 import { useAuth } from './AuthContext';
 import { brandAssets, brandCopy } from '../data/brand';
 
@@ -44,11 +45,7 @@ export function Layout() {
             <span>Wharton 52</span>
           </NavLink>
           <div className="mobile-header-actions">
-            {profile.avatarUrl ? (
-              <img className="avatar avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
-            ) : (
-              <div className="avatar">{profile.firstName[0]}{profile.lastName[0]}</div>
-            )}
+            <Avatar name={`${profile.firstName} ${profile.lastName}`} src={profile.avatarUrl} />
             <button
               className="mobile-menu-button"
               type="button"
@@ -69,11 +66,7 @@ export function Layout() {
         <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)}>
           <div id="mobile-navigation-menu" className="mobile-nav-drawer" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <div className="mobile-user-card">
-              {profile.avatarUrl ? (
-                <img className="avatar avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
-              ) : (
-                <div className="avatar">{profile.firstName[0]}{profile.lastName[0]}</div>
-              )}
+              <Avatar name={`${profile.firstName} ${profile.lastName}`} src={profile.avatarUrl} />
               <div>
                 <strong>{profile.firstName} {profile.lastName}</strong>
                 <span>WEMBA {profile.classYear}</span>
@@ -150,11 +143,7 @@ export function Layout() {
           )}
         </nav>
         <div className="side-profile">
-          {profile.avatarUrl ? (
-            <img className="avatar avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
-          ) : (
-            <div className="avatar">{profile.firstName[0]}{profile.lastName[0]}</div>
-          )}
+          <Avatar name={`${profile.firstName} ${profile.lastName}`} src={profile.avatarUrl} />
           <strong>{profile.firstName} {profile.lastName}</strong>
           <span>WEMBA {profile.classYear}</span>
           <button

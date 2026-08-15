@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { BriefcaseBusiness, CalendarDays, Edit3, GraduationCap, Languages, Link as LinkIcon, Mail, MapPin, Phone, Search, Sparkles, UsersRound } from 'lucide-react';
+import { Avatar } from '../components/Avatar';
 import { useAuth } from '../components/AuthContext';
 import type { AlumniProfile, BioBookProfile } from '../types/domain';
 
@@ -66,11 +67,7 @@ export function ProfilePage() {
         <main className="alumni-profile-main">
           <section className="alumni-hero-card">
             <div className="alumni-identity">
-              {avatarUrl ? (
-                <img className="avatar xl avatar-image" src={avatarUrl} alt={fullName} />
-              ) : (
-                <div className="avatar xl">{initialsFor(fullName)}</div>
-              )}
+              <Avatar name={fullName} src={avatarUrl} size="xl" />
               <div>
                 <h1>{fullName}</h1>
                 <p className="role-line">{compactJoin([title, company], ' at ') || 'Role not provided'}</p>

@@ -153,8 +153,8 @@ export function LoginPage() {
       const reset = await api.sendPasswordReset(identifier);
       setModal({
         title: 'Reset link sent',
-        body: `If an account exists, password reset instructions have been sent to ${reset.destination}.`,
-        action: () => setStage('signin'),
+        body: `If an account exists, password reset instructions have been sent to ${reset.destination}. Please follow the password reset link in that email. After you reset your password, return here and log in with the new password.`,
+        actionLabel: 'Got it',
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to send reset link.');

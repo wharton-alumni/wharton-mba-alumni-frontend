@@ -2,17 +2,26 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BriefcaseBusiness, CalendarDays, GraduationCap, Languages, Link as LinkIcon, Mail, MapPin, Search, ShieldCheck, Sparkles, UsersRound } from 'lucide-react';
+import { Avatar } from '../components/Avatar';
 import { api } from '../services/api';
 import type { BioBookProfile } from '../types/domain';
 
 export function DirectoryProfilePage() {
   const { profileId } = useParams();
   const [profile, setProfile] = useState<BioBookProfile | undefined>();
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState(() => window.location.hash.replace('#', '') || 'overview');
 
   useEffect(() => {
-    if (profileId) api.getBioBookProfileById(profileId).then(setProfile);
+    setLoading(true);
+    if (profileId) {
+      api.getBioBookProfileById(profileId)
+        .then(setProfile)
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, [profileId]);
 
   useEffect(() => {
@@ -25,6 +34,17 @@ export function DirectoryProfilePage() {
   }, []);
 
   const details = useMemo(() => profile ? buildProfileDetails(profile) : [], [profile]);
+
+  if (loading) {
+    return (
+      <section className="alumni-profile-page">
+        <div className="profile-not-found">
+          <div className="loading-spinner" aria-label="Loading profile" />
+          <p className="muted">Loading profile...</p>
+        </div>
+      </section>
+    );
+  }
 
   if (!profile) {
     return (
@@ -66,11 +86,7 @@ export function DirectoryProfilePage() {
         <main className="alumni-profile-main">
           <section className="alumni-hero-card">
             <div className="alumni-identity">
-              {profile.headshotProfessional ? (
-                <img className="avatar xl avatar-image" src={profile.headshotProfessional} alt={profile.fullLegalName} />
-              ) : (
-                <div className="avatar xl">{initials}</div>
-              )}
+              <Avatar name={profile.fullLegalName} src={profile.headshotProfessional} size="xl" />
               <div>
                 <h1>{profile.fullLegalName}</h1>
                 <p className="role-line">{compactJoin([profile.currentTitleRole, profile.currentEmployer], ' at ') || 'Role not provided'}</p>

@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Avatar } from '../components/Avatar';
 import { useAuth } from '../components/AuthContext';
 import { bioBookRegistrationFields, classYearToWembaBatch, wembaBatchToClassYear } from '../data/biobookFields';
 import { cohorts, industries } from '../data/options';
@@ -73,11 +74,7 @@ export function ProfileEditPage() {
           <p className="muted">All BioBook-format fields are editable here. Core directory fields stay synced from these details.</p>
         </div>
         <div className="photo-editor">
-          {form.avatarUrl ? (
-            <img className="avatar large avatar-image" src={form.avatarUrl} alt={`${form.firstName} ${form.lastName}`} />
-          ) : (
-            <div className="avatar large">{form.firstName[0]}{form.lastName[0]}</div>
-          )}
+          <Avatar name={`${form.firstName} ${form.lastName}`} src={form.avatarUrl} size="large" />
           <div className="photo-editor-fields">
             <label>Profile photo URL<input value={form.avatarUrl ?? ''} onChange={(event) => updatePhoto(event.target.value)} /></label>
             <label>Upload profile photo<input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event.target.files?.[0])} /></label>

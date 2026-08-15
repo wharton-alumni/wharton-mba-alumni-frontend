@@ -26,6 +26,7 @@ const emptyFilters: EventFilters = {
 };
 
 const eventCategories: Array<EventCategory | 'Regional'> = ['Networking', 'Industry Insights', 'Regional', 'Reunion', 'Career Opportunity', 'Community Event'];
+const EXTERNAL_POSTER_ID = '00000000-0000-0000-0000-000000000034';
 
 export function EventsPage() {
   const [events, setEvents] = useState<AlumniEvent[]>([]);
@@ -150,6 +151,7 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
   const date = event.eventDate ? new Date(event.eventDate) : null;
   const joined = rsvp?.status === 'JOINED';
   const interested = rsvp?.status === 'INTERESTED';
+  const externalEvent = event.postedById === EXTERNAL_POSTER_ID;
 
   return (
     <article className="event-card polished-event-card">
@@ -173,25 +175,31 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
         </div>
       </div>
       <div className="event-footer-actions">
-        <button
-          className="button primary compact"
-          type="button"
-          disabled={saving === 'JOINED' || saving === 'CANCELLED'}
-          onClick={() => {
-            if (joined) {
-              setConfirmWithdraw(true);
-              return;
-            }
-            handleRsvp('JOINED');
-          }}
-        >
-          <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : joined ? 'Joined' : 'Join Event'}
-        </button>
-        <button className="button ghost compact" type="button" disabled={interested || saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
-          <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
-        </button>
+        {externalEvent && event.externalLink ? (
+          <a className="button primary compact" href={event.externalLink} target="_blank" rel="noreferrer">Register</a>
+        ) : (
+          <>
+            <button
+              className="button primary compact"
+              type="button"
+              disabled={saving === 'JOINED' || saving === 'CANCELLED'}
+              onClick={() => {
+                if (joined) {
+                  setConfirmWithdraw(true);
+                  return;
+                }
+                handleRsvp('JOINED');
+              }}
+            >
+              <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : joined ? 'Joined' : 'Join Event'}
+            </button>
+            <button className="button ghost compact" type="button" disabled={interested || saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
+              <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
+            </button>
+          </>
+        )}
         <Link className="button ghost compact" to={`/events/${event.id}`}>View Details</Link>
-        {rsvp?.status && rsvp.status !== 'CANCELLED' && (
+        {!externalEvent && rsvp?.status && rsvp.status !== 'CANCELLED' && (
           <button className="button ghost compact" type="button" disabled={saving === 'CANCELLED'} onClick={() => handleRsvp('CANCELLED')}>
             <XCircle size={16} /> Cancel
           </button>

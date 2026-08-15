@@ -15,6 +15,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { useAuth } from '../components/AuthContext';
+import { Avatar } from '../components/Avatar';
 import classMetrics from '../data/classMetrics.json';
 import { intelligenceHubItems } from '../data/intelligenceHub';
 import { api } from '../services/api';
@@ -98,11 +99,7 @@ export function DashboardPage() {
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Wharton 52..." />
         </label>
         <div className="dashboard-tools">
-          {profile?.avatarUrl ? (
-            <img className="avatar avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
-          ) : profile ? (
-            <div className="avatar">{profile.firstName[0]}{profile.lastName[0]}</div>
-          ) : null}
+          {profile && <Avatar name={`${profile.firstName} ${profile.lastName}`} src={profile.avatarUrl} />}
           <div className="dashboard-user">
             <strong>{profile?.firstName ?? 'Alumni'}</strong>
             <span>Wharton 52</span>
@@ -114,11 +111,7 @@ export function DashboardPage() {
         <main className="dashboard-main-column">
           <section className="dashboard-welcome-card">
             <div className="welcome-copy">
-              {profile?.avatarUrl ? (
-                <img className="avatar large avatar-image" src={profile.avatarUrl} alt={`${profile.firstName} ${profile.lastName}`} />
-              ) : profile ? (
-                <div className="avatar large">{profile.firstName[0]}{profile.lastName[0]}</div>
-              ) : null}
+              {profile && <Avatar name={`${profile.firstName} ${profile.lastName}`} src={profile.avatarUrl} size="large" />}
               <div>
                 <h1>Good morning, {profile?.firstName ?? 'Wharton 52'}!</h1>
                 <p>Here is your Wharton 52 community update.</p>
@@ -201,11 +194,7 @@ export function DashboardPage() {
           <DashboardPanel title="Classmates in Directory" action="View All" to="/directory">
             <div className="avatar-stack">
               {profiles.slice(0, 6).map((person) => (
-                person.headshotProfessional ? (
-                  <img key={person.id} className="avatar avatar-image" src={person.headshotProfessional} alt={person.fullLegalName} />
-                ) : (
-                  <div key={person.id} className="avatar">{initialsFor(person.fullLegalName)}</div>
-                )
+                <Avatar key={person.id} name={person.fullLegalName} src={person.headshotProfessional} />
               ))}
               {profiles.length > 6 && <span>+{profiles.length - 6}</span>}
             </div>
@@ -248,11 +237,7 @@ function EventMini({ item }: { item: IntelligenceHubItem }) {
 function ProfileMini({ profile, badge }: { profile: BioBookProfile; badge?: string }) {
   return (
     <Link className="profile-mini" to={`/directory/${profile.id}`}>
-      {profile.headshotProfessional ? (
-        <img className="avatar avatar-image" src={profile.headshotProfessional} alt={profile.fullLegalName} />
-      ) : (
-        <div className="avatar">{initialsFor(profile.fullLegalName)}</div>
-      )}
+      <Avatar name={profile.fullLegalName} src={profile.headshotProfessional} />
       <div>
         <strong>{profile.fullLegalName}</strong>
         <span>{[profile.currentTitleRole, profile.currentEmployer].filter(Boolean).join(' at ')}</span>
