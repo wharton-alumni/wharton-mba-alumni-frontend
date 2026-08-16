@@ -2229,7 +2229,7 @@ main {
 }
 
 .event-segmented-tabs {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.25rem;
   width: fit-content;
@@ -2243,6 +2243,7 @@ main {
 }
 
 .event-segmented-tabs button {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3365,12 +3366,64 @@ main {
   .dashboard-topbar,
   .app-topbar,
   .page-inline-form,
-  .event-segmented-tabs,
   .announcement-workspace,
   .event-detail-layout,
   .alumni-profile-grid,
   .profile-breadcrumb {
     padding-inline: 1rem;
+  }
+
+  .events-page .directory-header {
+    gap: 0.7rem;
+    padding-top: 0.8rem;
+  }
+
+  .events-page .directory-header h1 {
+    font-size: 1.45rem;
+  }
+
+  .events-page .directory-header p {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .events-page .directory-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .events-page .directory-stats div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+    border-left: 0;
+    border-radius: 8px;
+    padding: 0.55rem;
+    background: #fff;
+  }
+
+  .events-page .directory-stats svg {
+    grid-row: auto;
+    width: 18px;
+    height: 18px;
+  }
+
+  .events-page .directory-stats strong {
+    font-size: 0.95rem;
+  }
+
+  .events-page .directory-stats span {
+    font-size: 0.64rem;
+    line-height: 1.15;
+  }
+
+  .events-page .page-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .events-page .page-header-actions .button {
+    min-height: 38px;
   }
 
   .directory-stats,
@@ -3380,7 +3433,20 @@ main {
 
   .event-segmented-tabs {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: auto;
+    height: auto;
+    margin: 0.75rem 1rem 0;
+    overflow: visible;
+    padding: 0.25rem;
+  }
+
+  .event-segmented-tabs button {
+    width: 100%;
+    min-height: 40px;
+    height: 40px;
+    padding-inline: 0.5rem;
+    font-size: 0.76rem;
   }
 
   .job-row-actions,
