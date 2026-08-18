@@ -7,6 +7,32 @@ import { industries } from '../data/options';
 import { api } from '../services/api';
 import type { JobListing } from '../data/jobs';
 
+function formatDateMMDDYYYY(value?: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+}
+
+function parseDateMMDDYYYY(value: string) {
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return '';
+  const [, month, day, year] = match;
+  return `${year}-${month}-${day}`;
+}
+
+function isPastDateMMDDYYYY(value: string) {
+  const parsed = parseDateMMDDYYYY(value);
+  if (!parsed) return false;
+  const selected = new Date(`${parsed}T12:00:00`).getTime();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return selected < today.getTime();
+}
+
 interface JobFilters {
   search: string;
   industry: string;
@@ -34,8 +60,8 @@ const emptyJobForm: Omit<JobListing, 'id' | 'postedBy' | 'postedById'> = {
   externalLink: '',
   applicationLink: '',
   description: '',
-  startDate: '',
-  endDate: '',
+      startDate: '',
+      endDate: '',
 };
 
 const jobTypes = ['Full-time', 'Fractional', 'Advisory'];
@@ -71,8 +97,8 @@ export function JobsPage() {
       externalLink: job.externalLink ?? '',
       applicationLink: job.applicationLink ?? '',
       description: job.description,
-      startDate: job.startDate ? job.startDate.slice(0, 16) : '',
-      endDate: job.endDate ? job.endDate.slice(0, 16) : '',
+      startDate: job.startDate ? formatDateMMDDYYYY(job.startDate) : '',
+      endDate: job.endDate ? formatDateMMDDYYYY(job.endDate) : '',
     });
     setShowForm(true);
   }
@@ -87,10 +113,14 @@ export function JobsPage() {
     event.preventDefault();
     setError('');
     try {
+      if ((jobForm.startDate && isPastDateMMDDYYYY(String(jobForm.startDate))) || (jobForm.endDate && isPastDateMMDDYYYY(String(jobForm.endDate)))) {
+        setError('Please choose today or a future date.');
+        return;
+      }
       const payload = {
         ...jobForm,
-        startDate: jobForm.startDate ? new Date(jobForm.startDate).toISOString() : undefined,
-        endDate: jobForm.endDate ? new Date(jobForm.endDate).toISOString() : undefined,
+        startDate: parseDateMMDDYYYY(String(jobForm.startDate ?? '')) ? new Date(`${parseDateMMDDYYYY(String(jobForm.startDate ?? ''))}T12:00:00`).toISOString() : undefined,
+        endDate: parseDateMMDDYYYY(String(jobForm.endDate ?? '')) ? new Date(`${parseDateMMDDYYYY(String(jobForm.endDate ?? ''))}T12:00:00`).toISOString() : undefined,
       };
       if (editingJobId) {
         const updated = await api.updateJob(editingJobId, payload);
@@ -116,8 +146,6 @@ export function JobsPage() {
       alert(err instanceof Error ? err.message : 'Unable to delete this job.');
     }
   }
-
-  const todayMin = new Date().toISOString().slice(0, 16);
 
   return (
     <section className="directory-page jobs-page">
@@ -153,8 +181,8 @@ export function JobsPage() {
             <label>State/Country<input value={jobForm.state} onChange={(event) => setJobForm({ ...jobForm, state: event.target.value })} required /></label>
           </div>
           <div className="field-row">
-            <label>Start date<input type="datetime-local" value={jobForm.startDate ?? ''} onChange={(event) => setJobForm({ ...jobForm, startDate: event.target.value })} min={todayMin} /></label>
-            <label>End date<input type="datetime-local" value={jobForm.endDate ?? ''} onChange={(event) => setJobForm({ ...jobForm, endDate: event.target.value })} min={jobForm.startDate || todayMin} /></label>
+            <label>Start date<input type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={jobForm.startDate ?? ''} onChange={(event) => setJobForm({ ...jobForm, startDate: event.target.value })} /></label>
+            <label>End date<input type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={jobForm.endDate ?? ''} onChange={(event) => setJobForm({ ...jobForm, endDate: event.target.value })} /></label>
           </div>
           <label>Type<select value={jobForm.type} onChange={(event) => setJobForm({ ...jobForm, type: event.target.value })}>{jobTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
           <label>Application link<input type="url" value={jobForm.applicationLink ?? ''} onChange={(event) => setJobForm({ ...jobForm, applicationLink: event.target.value })} placeholder="https://..." /></label>

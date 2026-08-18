@@ -186,7 +186,11 @@ export const api = {
     if (!response.ok) {
       throw new ApiError(response.status, friendlyErrorMessage(response.status, '/headshots/me', await response.text()));
     }
-    return response.json() as Promise<{ key: string; url: string }>;
+    const upload = await response.json() as { key: string; url: string };
+    return {
+      ...upload,
+      url: absolutizeApiUrl(upload.url),
+    };
   },
 
   getProfiles: async (filters: DirectoryFilters = {}): Promise<AlumniProfile[]> => {
@@ -411,6 +415,14 @@ function toClaimEmail(value: string) {
   const trimmed = value.trim().toLowerCase();
   if (trimmed.includes('@')) return trimmed;
   return `${trimmed}@${UNIVERSITY_DOMAIN}`;
+}
+
+function absolutizeApiUrl(url: string) {
+  try {
+    return new URL(url, API_BASE_URL).toString();
+  } catch {
+    return url;
+  }
 }
 
 function toJobListing(job: BackendJobPost, fallback?: Partial<JobListing>): JobListing {

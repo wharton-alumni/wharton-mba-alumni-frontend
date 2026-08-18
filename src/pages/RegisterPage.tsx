@@ -9,7 +9,6 @@ import type { AlumniProfile, BioBookProfile } from '../types/domain';
 
 type RegistrationFormState = Record<string, string | boolean>;
 type FieldErrors = Record<string, string>;
-type Stage = 'form' | 'code';
 const CONFIRM_PASSWORD_KEY = 'Confirm Password';
 
 function buildInitialForm(email = '', bioBookProfile?: BioBookProfile | null): RegistrationFormState {
@@ -40,12 +39,7 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { setSession } = useAuth();
   const navigate = useNavigate();
-
-  const [stage, setStage] = useState<Stage>('form');
-  const [pendingEmail, setPendingEmail] = useState('');
-  const [pendingToken, setPendingToken] = useState('');
-  const [pendingProfile, setPendingProfile] = useState<AlumniProfile | null>(null);
-  const [verificationCode, setVerificationCode] = useState('');
+  const [headshotFile, setHeadshotFile] = useState<File | null>(null);
 
   function update(key: string, value: string | boolean) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -94,91 +88,26 @@ export function RegisterPage() {
     setLoading(true);
     setError('');
     try {
-      const email = String(form['Work email'] ?? '');
       const session = await api.register(bioBookProfileToRegistration(form));
-      if (hasPrefilledBioBook) {
+      if (headshotFile) {
+        const upload = await api.uploadProfilePhoto(headshotFile);
+        const updatedProfile = await api.updateProfile(session.profile.id, {
+          avatarUrl: upload.url,
+          bioBookProfileJson: JSON.stringify({
+            ...form,
+            'Headshot (professional)': upload.url,
+          }),
+        });
+        setSession(session.token, updatedProfile);
+      } else {
         setSession(session.token, session.profile);
-        navigate('/dashboard');
-        return;
       }
-      await api.sendOnboardingCode(email);
-      setPendingEmail(email);
-      setPendingToken(session.token);
-      setPendingProfile(session.profile);
-      setVerificationCode('');
-      setStage('code');
+      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create your profile.');
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleVerifyCode(event: FormEvent) {
-    event.preventDefault();
-    if (!/^\d{6}$/.test(verificationCode.trim())) {
-      setError('Enter the 6-digit verification code sent to your email.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      await api.verifyOnboardingCode(pendingEmail, verificationCode.trim());
-      setSession(pendingToken, pendingProfile!);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid or expired verification code. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResendCode() {
-    setLoading(true);
-    setError('');
-    try {
-      await api.sendOnboardingCode(pendingEmail);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to resend verification code.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (stage === 'code') {
-    return (
-      <section className="content narrow">
-        <form className="panel form-grid" onSubmit={handleVerifyCode}>
-          <div className="section-heading">
-            <p className="eyebrow">Email verification</p>
-            <h1>Verify your email</h1>
-            <p className="muted">Enter the 6-digit verification code sent to <strong>{pendingEmail}</strong>.</p>
-          </div>
-          <label>
-            Verification code
-            <input
-              inputMode="numeric"
-              pattern="[0-9]{6}"
-              maxLength={6}
-              value={verificationCode}
-              onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="123456"
-              required
-            />
-          </label>
-          {error && <div className="error-banner" role="alert">{error}</div>}
-          <button className="button primary" disabled={loading || verificationCode.length !== 6}>
-            {loading ? 'Verifying...' : 'Verify email'}
-          </button>
-          <div className="auth-alt-actions">
-            <button type="button" className="button ghost" disabled={loading} onClick={handleResendCode}>
-              Resend code
-            </button>
-            <Link to="/login" className="button ghost">Back to login</Link>
-          </div>
-        </form>
-      </section>
-    );
   }
 
   return (
@@ -198,6 +127,7 @@ export function RegisterPage() {
               onChange={(value) => update(field.key, value)}
               error={fieldErrors[field.key]}
               onError={(message) => updateFieldError(field.key, message)}
+              onHeadshotFileChange={setHeadshotFile}
             />
           ))}
           <div className="password-field-wrap">
@@ -246,12 +176,14 @@ function BioBookInput({
   onChange,
   error,
   onError,
+  onHeadshotFileChange,
 }: {
   field: (typeof bioBookRegistrationFields)[number];
   value: string | boolean;
   onChange: (value: string | boolean) => void;
   error?: string;
   onError: (message: string) => void;
+  onHeadshotFileChange: (file: File | null) => void;
 }) {
   if (field.inputType === 'checkbox') {
     return (
@@ -322,10 +254,9 @@ function BioBookInput({
         onError('Please choose an image smaller than 1 MB.');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => onChange(String(reader.result));
-      reader.onerror = () => onError('Unable to read that image file.');
-      reader.readAsDataURL(file);
+      onHeadshotFileChange(file);
+      onError('');
+      onChange(URL.createObjectURL(file));
     }
 
     return (
@@ -336,9 +267,9 @@ function BioBookInput({
         <div className="registration-headshot-controls">
           <label>
             <FieldLabel field={field} />
-            <input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event.target.files?.[0])} required={field.required && !preview} />
+            <input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event.target.files?.[0])} />
           </label>
-          {preview && <button type="button" className="button ghost compact" onClick={() => onChange('')}>Remove photo</button>}
+          {preview && <button type="button" className="button ghost compact" onClick={() => { onHeadshotFileChange(null); onChange(''); }}>Remove photo</button>}
           {error && <FieldError message={error} />}
         </div>
       </div>

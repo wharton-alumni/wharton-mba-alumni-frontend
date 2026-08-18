@@ -21,17 +21,23 @@ export function LoginPage() {
   const { setSession } = useAuth();
   const navigate = useNavigate();
 
-  const claimEmail = identifier.includes('@') ? identifier : `${identifier || 'username'}@wharton.upenn.edu`;
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+  const localEmailPart = normalizedIdentifier.split('@')[0];
+  const claimEmail = `${localEmailPart}@wharton.upenn.edu`;
 
   async function handleLookup(event: FormEvent) {
     event.preventDefault();
+    if (normalizedIdentifier.includes('@') && !normalizedIdentifier.endsWith('@wharton.upenn.edu')) {
+      setError('Please enter your Wharton university email id.');
+      return;
+    }
     setLoading(true);
     setError('');
     setMatchedBioBookProfile(null);
     try {
       const [result, bioBookResult] = await Promise.all([
-        api.lookupOnboarding(identifier),
-        api.lookupBioBook(identifier),
+        api.lookupOnboarding(normalizedIdentifier),
+        api.lookupBioBook(normalizedIdentifier),
       ]);
       setMatchedProfile(result);
 
@@ -49,7 +55,7 @@ export function LoginPage() {
           body: 'Your profile may be pre-populated with existing alumni details. By continuing, you agree to allow us to store and use your account and profile information to provide you with access to the alumni portal.',
           actionLabel: 'Continue',
           action: async () => {
-            await api.recordConsent(identifier, 'biobook-claim');
+            await api.recordConsent(normalizedIdentifier, 'biobook-claim');
             await handleSendVerificationCode();
           },
         });
@@ -69,7 +75,7 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await api.sendOnboardingCode(identifier);
+      await api.sendOnboardingCode(claimEmail);
       setVerificationCode('');
       setStage('code');
     } catch (err) {
@@ -88,7 +94,7 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await api.verifyOnboardingCode(identifier, verificationCode.trim());
+      await api.verifyOnboardingCode(claimEmail, verificationCode.trim());
       navigate('/register', {
         state: {
           email: claimEmail,
@@ -108,7 +114,13 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const session = await api.login(identifier.includes('@') ? identifier : claimEmail, password);
+      const email = claimEmail;
+      if (normalizedIdentifier.includes('@') && !normalizedIdentifier.endsWith('@wharton.upenn.edu')) {
+        setError('Please enter your Wharton university email id.');
+        setLoading(false);
+        return;
+      }
+      const session = await api.login(email, password);
       setSession(session.token, session.profile);
       navigate('/dashboard');
     } catch (err) {
@@ -120,10 +132,14 @@ export function LoginPage() {
 
   async function handleForgotPassword(event: FormEvent) {
     event.preventDefault();
+    if (normalizedIdentifier.includes('@') && !normalizedIdentifier.endsWith('@wharton.upenn.edu')) {
+      setError('Please enter your Wharton university email id.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const reset = await api.sendPasswordReset(identifier);
+      const reset = await api.sendPasswordReset(claimEmail);
       setModal({
         title: 'Reset link sent',
         body: `If an account exists, password reset instructions have been sent to ${reset.destination}. Please follow the password reset link in that email. After you reset your password, return here and log in with the new password.`,
@@ -165,16 +181,16 @@ export function LoginPage() {
         </p>
 
         <label>
-          University email username
+          Enter your university email id
           <div className="email-suffix-field">
             <input
               value={identifier}
-              maxLength={identifier.includes('@') ? undefined : 40}
-              onChange={(event) => setIdentifier(event.target.value.slice(0, event.target.value.includes('@') ? undefined : 40))}
-              placeholder="first.last"
+              maxLength={60}
+              onChange={(event) => setIdentifier(event.target.value.split('@')[0].slice(0, 60))}
+              placeholder="your email id"
               required
             />
-            {!identifier.includes('@') && <span>@wharton.upenn.edu</span>}
+            <span>@wharton.upenn.edu</span>
           </div>
         </label>
 
@@ -231,14 +247,16 @@ export function LoginPage() {
             disabled={loading}
             onClick={() => {
               setModal({
-                title: 'Consent to create your profile',
-                body: 'The profile can be prefilled from previously fetched information. By continuing, you consent to storing this account and profile data for the alumni portal experience.',
-                actionLabel: 'Continue to profile creation',
-                action: () => navigate('/register', { state: { email: claimEmail, showConsent: false } }),
+                title: 'Verify your email first',
+                body: `We will send a verification code to ${claimEmail}. After you verify it, you can create your profile.`,
+                actionLabel: 'Send verification code',
+                action: async () => {
+                  await handleSendVerificationCode();
+                },
               });
             }}
           >
-            Create profile
+            Create Profile
           </button>
         )}
 
