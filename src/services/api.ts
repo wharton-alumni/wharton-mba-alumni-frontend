@@ -42,7 +42,10 @@ interface BackendJobPost {
   applicationLink?: string;
   description: string;
   postedByName?: string;
+  postedById?: string;
   createdAt?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const api = {
@@ -206,6 +209,16 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  updateEvent: async (id: string, payload: Partial<AlumniEvent>): Promise<AlumniEvent> =>
+    request<AlumniEvent>(`/events/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteEvent: async (id: string): Promise<void> => {
+    await request(`/events/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
   getMyEventRsvps: async (): Promise<EventRsvp[]> =>
     request<EventRsvp[]>('/events/rsvps/me'),
 
@@ -252,9 +265,33 @@ export const api = {
         externalLink: payload.externalLink || null,
         applicationLink: payload.applicationLink || null,
         description: payload.description,
+        startDate: payload.startDate || null,
+        endDate: payload.endDate || null,
       }),
     });
     return toJobListing(job, payload);
+  },
+
+  updateJob: async (id: string, payload: Omit<JobListing, 'id' | 'postedBy'>): Promise<JobListing> => {
+    const location = [payload.city, payload.state].filter(Boolean).join(', ');
+    const job = await request<BackendJobPost>(`/jobs/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: payload.title,
+        company: payload.company,
+        location: location || null,
+        externalLink: payload.externalLink || null,
+        applicationLink: payload.applicationLink || null,
+        description: payload.description,
+        startDate: payload.startDate || null,
+        endDate: payload.endDate || null,
+      }),
+    });
+    return toJobListing(job, payload);
+  },
+
+  deleteJob: async (id: string): Promise<void> => {
+    await request(`/jobs/${encodeURIComponent(id)}`, { method: 'DELETE' });
   },
 };
 
@@ -391,5 +428,8 @@ function toJobListing(job: BackendJobPost, fallback?: Partial<JobListing>): JobL
     applicationLink: job.applicationLink ?? fallback?.applicationLink,
     description: job.description,
     postedBy: job.postedByName ?? 'Wharton Alumni',
+    postedById: job.postedById,
+    startDate: job.startDate ?? fallback?.startDate,
+    endDate: job.endDate ?? fallback?.endDate,
   };
 }

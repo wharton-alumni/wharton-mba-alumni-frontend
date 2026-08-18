@@ -791,7 +791,7 @@ main {
   flex: 0 0 56px;
   border-radius: 50%;
   color: #fff;
-  background: #001c4c;
+  background: #990000;
   font-weight: 900;
   line-height: 1;
   overflow: hidden;
@@ -826,7 +826,7 @@ main {
 }
 
 .role-line {
-  color: #1e293b;
+  color: #dbeafe;
   font-weight: 800;
 }
 
@@ -1073,8 +1073,8 @@ main {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  color: #dbeafe;
-  background: #011f5b;
+  color: #fff;
+  background: #990000;
   font-size: 0.88rem;
   font-weight: 800;
 }
@@ -2340,6 +2340,17 @@ main {
   font-size: 1.125rem;
 }
 
+.event-inline-badge {
+  display: inline-block;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  color: #fff;
+  background: rgba(153, 0, 0, 0.9);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
 .event-description {
   display: -webkit-box;
   min-height: 3em;
@@ -2611,6 +2622,7 @@ main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(240px, 36%);
   overflow: hidden;
+  background: #0a192f;
 }
 
 .alumni-identity {
@@ -2632,6 +2644,7 @@ main {
 .alumni-identity h1 {
   margin-bottom: 0.2rem;
   font-size: 1.8rem;
+  color: #fff;
 }
 
 .identity-lines {
@@ -2645,7 +2658,7 @@ main {
   display: inline-flex;
   gap: 0.4rem;
   align-items: center;
-  color: #475569;
+  color: #bfdbfe;
   font-size: 0.86rem;
   font-weight: 800;
 }
@@ -2653,12 +2666,12 @@ main {
 .alumni-company-mark {
   display: grid;
   place-items: center;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
   padding: 1rem;
-  color: #001c4c;
+  color: #fff;
   background:
-    linear-gradient(135deg, rgba(1, 31, 91, 0.04), rgba(153, 0, 0, 0.06)),
-    #fff;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(153, 0, 0, 0.1)),
+    #0a192f;
   text-align: center;
 }
 
@@ -2677,11 +2690,11 @@ main {
 }
 
 .alumni-badges span {
-  border: 1px solid #dbe3ee;
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 6px;
   padding: 0.35rem 0.65rem;
-  color: #001c4c;
-  background: #f8fafc;
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.08);
   font-size: 0.78rem;
   font-weight: 900;
 }
@@ -2693,6 +2706,7 @@ main {
   gap: 1.5rem;
   border-top: 1px solid #e2e8f0;
   padding: 0 1.25rem;
+  background: #fff;
 }
 
 .profile-tabs a {
@@ -2725,6 +2739,7 @@ main {
 .profile-panel h2 {
   margin-bottom: 0;
   font-size: 1rem;
+  color: #990000;
 }
 
 .profile-panel p {

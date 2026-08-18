@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { BriefcaseBusiness, Building2, ExternalLink, MapPin, Plus, RotateCcw, Search, Wifi } from 'lucide-react';
+import { BriefcaseBusiness, Building2, ExternalLink, MapPin, Plus, RotateCcw, Search, Trash2, Pencil, Wifi } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppTopbar } from '../components/AppTopbar';
+import { useAuth } from '../components/AuthContext';
 import { industries } from '../data/options';
 import { api } from '../services/api';
 import type { JobListing } from '../data/jobs';
@@ -22,7 +23,7 @@ const emptyFilters: JobFilters = {
   type: '',
 };
 
-const initialJobForm: Omit<JobListing, 'id' | 'postedBy'> = {
+const emptyJobForm: Omit<JobListing, 'id' | 'postedBy' | 'postedById'> = {
   title: '',
   company: '',
   industry: 'Technology',
@@ -33,6 +34,8 @@ const initialJobForm: Omit<JobListing, 'id' | 'postedBy'> = {
   externalLink: '',
   applicationLink: '',
   description: '',
+  startDate: '',
+  endDate: '',
 };
 
 const jobTypes = ['Full-time', 'Fractional', 'Advisory'];
@@ -41,8 +44,10 @@ export function JobsPage() {
   const [allJobs, setAllJobs] = useState<JobListing[]>([]);
   const [filters, setFilters] = useState<JobFilters>(emptyFilters);
   const [showForm, setShowForm] = useState(false);
-  const [jobForm, setJobForm] = useState(initialJobForm);
+  const [jobForm, setJobForm] = useState(emptyJobForm);
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const { profile } = useAuth();
 
   useEffect(() => {
     api.getJobs().then(setAllJobs);
@@ -53,18 +58,66 @@ export function JobsPage() {
   const companies = unique(allJobs.map((job) => job.company)).length;
   const remoteRoles = allJobs.filter((job) => `${job.city} ${job.state}`.toLowerCase().includes('remote')).length;
 
-  async function handleCreateJob(event: FormEvent) {
+  function openEditForm(job: JobListing) {
+    setEditingJobId(job.id);
+    setJobForm({
+      title: job.title,
+      company: job.company,
+      industry: job.industry,
+      city: job.city,
+      state: job.state,
+      type: job.type,
+      seniority: job.seniority,
+      externalLink: job.externalLink ?? '',
+      applicationLink: job.applicationLink ?? '',
+      description: job.description,
+      startDate: job.startDate ? job.startDate.slice(0, 16) : '',
+      endDate: job.endDate ? job.endDate.slice(0, 16) : '',
+    });
+    setShowForm(true);
+  }
+
+  function openCreateForm() {
+    setEditingJobId(null);
+    setJobForm(emptyJobForm);
+    setShowForm(true);
+  }
+
+  async function handleSubmitJob(event: FormEvent) {
     event.preventDefault();
     setError('');
     try {
-      const created = await api.createJob(jobForm);
-      setAllJobs((current) => [created, ...current]);
-      setJobForm(initialJobForm);
+      const payload = {
+        ...jobForm,
+        startDate: jobForm.startDate ? new Date(jobForm.startDate).toISOString() : undefined,
+        endDate: jobForm.endDate ? new Date(jobForm.endDate).toISOString() : undefined,
+      };
+      if (editingJobId) {
+        const updated = await api.updateJob(editingJobId, payload);
+        setAllJobs((current) => current.map((j) => (j.id === editingJobId ? updated : j)));
+      } else {
+        const created = await api.createJob(payload);
+        setAllJobs((current) => [created, ...current]);
+      }
+      setJobForm(emptyJobForm);
+      setEditingJobId(null);
       setShowForm(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Please log in again before posting a job.');
     }
   }
+
+  async function handleDeleteJob(id: string) {
+    if (!confirm('Are you sure you want to delete this job posting?')) return;
+    try {
+      await api.deleteJob(id);
+      setAllJobs((current) => current.filter((j) => j.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Unable to delete this job.');
+    }
+  }
+
+  const todayMin = new Date().toISOString().slice(0, 16);
 
   return (
     <section className="directory-page jobs-page">
@@ -80,13 +133,13 @@ export function JobsPage() {
           <Metric icon={Building2} value={String(companies)} label="Hiring Companies" />
           <Metric icon={Wifi} value={String(remoteRoles)} label="Remote Roles" />
         </div>
-        <button className="button primary compact" type="button" onClick={() => setShowForm((current) => !current)}>
+        <button className="button primary compact" type="button" onClick={openCreateForm}>
           <Plus size={16} /> Post a Job
         </button>
       </div>
 
       {showForm && (
-        <form className="panel form-grid job-form-panel page-inline-form" onSubmit={handleCreateJob}>
+        <form className="panel form-grid job-form-panel page-inline-form" onSubmit={handleSubmitJob}>
           <div className="field-row">
             <label>Job title<input value={jobForm.title} onChange={(event) => setJobForm({ ...jobForm, title: event.target.value })} required /></label>
             <label>Company<input value={jobForm.company} onChange={(event) => setJobForm({ ...jobForm, company: event.target.value })} required /></label>
@@ -99,13 +152,17 @@ export function JobsPage() {
             <label>City<input value={jobForm.city} onChange={(event) => setJobForm({ ...jobForm, city: event.target.value })} required /></label>
             <label>State/Country<input value={jobForm.state} onChange={(event) => setJobForm({ ...jobForm, state: event.target.value })} required /></label>
           </div>
+          <div className="field-row">
+            <label>Start date<input type="datetime-local" value={jobForm.startDate ?? ''} onChange={(event) => setJobForm({ ...jobForm, startDate: event.target.value })} min={todayMin} /></label>
+            <label>End date<input type="datetime-local" value={jobForm.endDate ?? ''} onChange={(event) => setJobForm({ ...jobForm, endDate: event.target.value })} min={jobForm.startDate || todayMin} /></label>
+          </div>
           <label>Type<select value={jobForm.type} onChange={(event) => setJobForm({ ...jobForm, type: event.target.value })}>{jobTypes.map((type) => <option key={type}>{type}</option>)}</select></label>
           <label>Application link<input type="url" value={jobForm.applicationLink ?? ''} onChange={(event) => setJobForm({ ...jobForm, applicationLink: event.target.value })} placeholder="https://..." /></label>
           <label>Description<textarea value={jobForm.description} onChange={(event) => setJobForm({ ...jobForm, description: event.target.value })} required /></label>
           {error && <p className="form-error">{error}</p>}
           <div className="action-stack">
-            <button className="button primary">Create job</button>
-            <button type="button" className="button ghost" onClick={() => setShowForm(false)}>Cancel</button>
+            <button className="button primary">{editingJobId ? 'Update job' : 'Create job'}</button>
+            <button type="button" className="button ghost" onClick={() => { setShowForm(false); setEditingJobId(null); }}>Cancel</button>
           </div>
         </form>
       )}
@@ -129,7 +186,15 @@ export function JobsPage() {
         <section className="directory-results-panel jobs-results-panel">
           {jobs.length > 0 ? (
             <div className="job-row-list">
-              {jobs.map((job) => <JobRow key={job.id} job={job} />)}
+              {jobs.map((job) => (
+                <JobRow
+                  key={job.id}
+                  job={job}
+                  isOwner={profile?.id === job.postedById || profile?.role === 'ADMIN'}
+                  onEdit={() => openEditForm(job)}
+                  onDelete={() => handleDeleteJob(job.id)}
+                />
+              ))}
             </div>
           ) : (
             <EmptyState title="No job listings match these filters" message="Try widening your keyword, location, industry, or role filters." icon={RotateCcw} />
@@ -140,7 +205,7 @@ export function JobsPage() {
   );
 }
 
-function JobRow({ job }: { job: JobListing }) {
+function JobRow({ job, isOwner, onEdit, onDelete }: { job: JobListing; isOwner: boolean; onEdit: () => void; onDelete: () => void }) {
   const location = [job.city, job.state].filter(Boolean).join(', ') || 'Location not provided';
   const logo = initialsFor(job.company);
   return (
@@ -160,6 +225,12 @@ function JobRow({ job }: { job: JobListing }) {
       <div className="job-row-actions">
         {job.applicationLink && <a className="button primary compact" href={job.applicationLink} target="_blank" rel="noreferrer">Apply <ExternalLink size={15} /></a>}
         <Link className="button ghost compact" to={`/jobs/${job.id}`}>View Details</Link>
+        {isOwner && (
+          <>
+            <button className="button ghost compact" type="button" onClick={onEdit}><Pencil size={15} /> Edit</button>
+            <button className="button ghost compact" type="button" onClick={onDelete} style={{ color: '#990000' }}><Trash2 size={15} /> Delete</button>
+          </>
+        )}
       </div>
     </article>
   );

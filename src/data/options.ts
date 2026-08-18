@@ -23,6 +23,7 @@ export const eventCategories: EventCategory[] = [
   'Reunion',
   'Career Opportunity',
   'Community Event',
+  'Dinner',
 ];
 
 export const classYears = Array.from({ length: 2028 - 1975 + 1 }, (_, index) => 2028 - index);

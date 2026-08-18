@@ -8,9 +8,12 @@ export interface JobListing {
   type: string;
   seniority: string;
   postedBy: string;
+  postedById?: string;
   externalLink?: string;
   applicationLink?: string;
   description: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const jobListings: JobListing[] = [

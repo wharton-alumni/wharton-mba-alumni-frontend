@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CalendarDays, CheckCircle2, Clock, MapPin, Star, UserRound, UsersRound } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock, MapPin, UserRound, UsersRound } from 'lucide-react';
 import { AppTopbar } from '../components/AppTopbar';
 import { Avatar } from '../components/Avatar';
 import { api } from '../services/api';
@@ -35,7 +35,6 @@ export function EventDetailPage() {
   const event = useMemo(() => events.find((item) => item.id === eventId), [eventId, events]);
   const rsvp = eventId ? rsvps[eventId] : undefined;
   const joined = rsvp?.status === 'JOINED';
-  const interested = rsvp?.status === 'INTERESTED';
   const externalEvent = event?.postedById === EXTERNAL_POSTER_ID;
 
   async function handleRsvp(status: EventRsvpStatus) {
@@ -117,9 +116,6 @@ export function EventDetailPage() {
                       }}
                     >
                       <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : joined ? 'Joined' : 'Join Event'}
-                    </button>
-                    <button className="button ghost compact" type="button" disabled={interested || saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
-                      <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
                     </button>
                   </>
                 )}

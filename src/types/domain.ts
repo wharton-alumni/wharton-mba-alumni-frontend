@@ -6,7 +6,8 @@ export type EventCategory =
   | 'Industry Insights'
   | 'Reunion'
   | 'Career Opportunity'
-  | 'Community Event';
+  | 'Community Event'
+  | 'Dinner';
 
 export interface AlumniProfile {
   id: string;

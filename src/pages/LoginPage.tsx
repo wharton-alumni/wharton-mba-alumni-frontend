@@ -33,9 +33,10 @@ export function LoginPage() {
       const result = await api.lookupOnboarding(identifier);
       if (!result.exists) {
         setModal({
-          title: 'Profile not found',
-          body: 'This university email was not found in the WEMBA 52 BioBook data. You can continue by creating a new profile and consenting to store the submitted data.',
-          action: () => navigate('/register', { state: { email: claimEmail, showConsent: true } }),
+          title: 'No BioBook match found',
+          body: 'If you already have an alumni portal account, please sign in instead. If you are new to the portal, you can create a profile from the registration page.',
+          actionLabel: 'Go to sign in',
+          action: () => setStage('signin'),
         });
         return;
       }
@@ -253,14 +254,11 @@ export function LoginPage() {
         )}
 
         <div className="auth-alt-actions">
-          <button type="button" className="button ghost" onClick={() => { setStage(stage === 'signin' ? 'lookup' : 'signin'); setError(''); }}>
-            {stage === 'signin' ? 'Back to BioBook lookup' : 'Already claimed? Log in'}
-          </button>
+          <Link to="/register" className="button ghost">Create a profile</Link>
           <button type="button" className="button ghost" onClick={() => { setStage('forgot'); setError(''); }}>
             Forgot password
           </button>
         </div>
-        <p className="muted">New here? <Link to="/register" state={{ showConsent: true }}>Create a profile</Link></p>
       </form>
 
       {modal && (

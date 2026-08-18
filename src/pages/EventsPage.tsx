@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, CalendarPlus, CheckCircle2, Clock, Grid2X2, List, MapPin, Search, Star, UserRound, UsersRound, Video, XCircle } from 'lucide-react';
+import { CalendarDays, CalendarPlus, CheckCircle2, Clock, Grid2X2, List, MapPin, Pencil, Search, Trash2, UserRound, UsersRound, Video, XCircle } from 'lucide-react';
 import { AppTopbar } from '../components/AppTopbar';
 import { useAuth } from '../components/AuthContext';
 import { api } from '../services/api';
@@ -25,7 +25,7 @@ const emptyFilters: EventFilters = {
   dateTo: '',
 };
 
-const eventCategories: Array<EventCategory | 'Regional'> = ['Networking', 'Industry Insights', 'Regional', 'Reunion', 'Career Opportunity', 'Community Event'];
+const eventCategories: Array<EventCategory | 'Regional'> = ['Networking', 'Industry Insights', 'Regional', 'Reunion', 'Career Opportunity', 'Community Event', 'Dinner'];
 const EXTERNAL_POSTER_ID = '00000000-0000-0000-0000-000000000034';
 
 export function EventsPage() {
@@ -112,9 +112,15 @@ export function EventsPage() {
                   key={event.id}
                   event={event}
                   rsvp={rsvps[event.id]}
+                  profileId={profile?.id}
                   onRsvp={async (status) => {
                     const updated = await api.updateEventRsvp(event.id, status);
                     setRsvps((current) => ({ ...current, [event.id]: updated }));
+                  }}
+                  onDelete={async () => {
+                    if (!confirm('Are you sure you want to delete this event?')) return;
+                    await api.deleteEvent(event.id);
+                    setEvents((current) => current.filter((e) => e.id !== event.id));
                   }}
                 />
               ))}
@@ -132,7 +138,7 @@ export function EventsPage() {
   );
 }
 
-function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRsvp; onRsvp: (status: EventRsvpStatus) => Promise<void> }) {
+function EventCard({ event, rsvp, profileId, onRsvp, onDelete }: { event: AlumniEvent; rsvp?: EventRsvp; profileId?: string; onRsvp: (status: EventRsvpStatus) => Promise<void>; onDelete: () => Promise<void> }) {
   const [saving, setSaving] = useState<EventRsvpStatus | null>(null);
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const [error, setError] = useState('');
@@ -150,17 +156,14 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
 
   const date = event.eventDate ? new Date(event.eventDate) : null;
   const joined = rsvp?.status === 'JOINED';
-  const interested = rsvp?.status === 'INTERESTED';
   const externalEvent = event.postedById === EXTERNAL_POSTER_ID;
+  const isOwner = profileId === event.postedById;
 
   return (
     <article className="event-card polished-event-card">
-      <div className="event-media">
-        {event.imageUrl ? <img src={event.imageUrl} alt="" /> : <div><CalendarDays size={36} /></div>}
-        <span className="event-status-badge">{event.category}</span>
-      </div>
       <div className="event-card-body">
         <h2><Link to={`/events/${event.id}`}>{event.title}</Link></h2>
+        <span className="event-inline-badge">{event.category}</span>
         <p className="event-description">{event.description}</p>
         <div className="event-metadata">
           <span><CalendarDays size={15} /> {date ? date.toLocaleDateString() : 'Date TBD'}</span>
@@ -193,12 +196,15 @@ function EventCard({ event, rsvp, onRsvp }: { event: AlumniEvent; rsvp?: EventRs
             >
               <CheckCircle2 size={16} /> {saving === 'JOINED' ? 'Joining...' : joined ? 'Joined' : 'Join Event'}
             </button>
-            <button className="button ghost compact" type="button" disabled={interested || saving === 'INTERESTED'} onClick={() => handleRsvp('INTERESTED')}>
-              <Star size={16} /> {saving === 'INTERESTED' ? 'Saving...' : interested ? 'Interested' : 'Interested'}
-            </button>
           </>
         )}
         <Link className="button ghost compact" to={`/events/${event.id}`}>View Details</Link>
+        {isOwner && (
+          <>
+            <Link className="button ghost compact" to={`/events/new?edit=${event.id}`}><Pencil size={15} /> Edit</Link>
+            <button className="button ghost compact" type="button" onClick={onDelete} style={{ color: '#990000' }}><Trash2 size={15} /> Delete</button>
+          </>
+        )}
         {!externalEvent && rsvp?.status && rsvp.status !== 'CANCELLED' && (
           <button className="button ghost compact" type="button" disabled={saving === 'CANCELLED'} onClick={() => handleRsvp('CANCELLED')}>
             <XCircle size={16} /> Cancel
