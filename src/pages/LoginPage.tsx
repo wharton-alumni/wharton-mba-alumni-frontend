@@ -32,12 +32,7 @@ export function LoginPage() {
     try {
       const result = await api.lookupOnboarding(identifier);
       if (!result.exists) {
-        setModal({
-          title: 'No BioBook match found',
-          body: 'If you already have an alumni portal account, please sign in instead. If you are new to the portal, you can create a profile from the registration page.',
-          actionLabel: 'Go to sign in',
-          action: () => setStage('signin'),
-        });
+        navigate('/register', { state: { email: claimEmail, showConsent: true } });
         return;
       }
       setMatchedProfile(result);
@@ -250,6 +245,12 @@ export function LoginPage() {
         {stage === 'code' && (
           <button type="button" className="button ghost" disabled={loading} onClick={handleSendVerificationCode}>
             Send verification code again
+          </button>
+        )}
+
+        {stage === 'signin' && (
+          <button type="button" className="button ghost" disabled={loading} onClick={() => { setStage('forgot'); setError(''); }}>
+            Forgot password
           </button>
         )}
       </form>
