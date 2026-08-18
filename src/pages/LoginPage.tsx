@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ApiError, api } from '../services/api';
 import { useAuth } from '../components/AuthContext';
 import { PasswordField } from '../components/PasswordField';
@@ -185,7 +185,7 @@ export function LoginPage() {
         )}
 
         <p className="muted">
-          {stage === 'lookup' && 'Enter the university email username to claim your profile.'}
+          {stage === 'lookup' && 'Enter your University email username to check your record in the WEMBA 51 & 52 class list.'}
           {stage === 'code' && 'Enter the 6-digit verification code sent to your university email.'}
           {stage === 'password' && 'Create a password to claim the prefilled profile.'}
           {stage === 'signin' && 'Sign in with an existing portal password.'}
@@ -244,7 +244,7 @@ export function LoginPage() {
         {error && <p className="form-error">{error}</p>}
 
         <button className="button primary" disabled={loading}>
-          {loading ? 'Working...' : stage === 'lookup' ? 'Continue' : stage === 'code' ? 'Verify code' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
+          {loading ? 'Working...' : stage === 'lookup' ? 'Check Email' : stage === 'code' ? 'Verify code' : stage === 'password' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
         </button>
 
         {stage === 'code' && (
@@ -252,13 +252,6 @@ export function LoginPage() {
             Send verification code again
           </button>
         )}
-
-        <div className="auth-alt-actions">
-          <Link to="/register" className="button ghost">Create a profile</Link>
-          <button type="button" className="button ghost" onClick={() => { setStage('forgot'); setError(''); }}>
-            Forgot password
-          </button>
-        </div>
       </form>
 
       {modal && (
