@@ -91,11 +91,11 @@ export function EventFormPage() {
           <h1>{editId ? 'Edit alumni event' : 'Submit an alumni event'}</h1>
         </div>
         {error && <div className="error-banner" role="alert">{error}</div>}
-        <label>Title<span className="required-mark">*</span><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required /></label>
-        <label>Category<span className="required-mark">*</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as EventCategory })}>{eventCategories.map((category) => <option key={category}>{category}</option>)}</select></label>
+        <label>Title <span className="required-mark">*</span><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required /></label>
+        <label>Category <span className="required-mark">*</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as EventCategory })}>{eventCategories.map((category) => <option key={category}>{category}</option>)}</select></label>
         <label>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
         <label>Date/time<input type="datetime-local" value={form.eventDate} onChange={(event) => setForm({ ...form, eventDate: event.target.value })} min={todayMin} /></label>
-        <label>Location<span className="required-mark">*</span><input value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} required /></label>
+        <label>Location <span className="required-mark">*</span><input value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} required /></label>
         <label>External link<input type="url" value={form.externalLink} onChange={(event) => setForm({ ...form, externalLink: event.target.value })} /></label>
         <label>Image URL<input type="url" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} /></label>
         <label>Upload image<input type="file" accept="image/*" onChange={(event) => handleImageUpload(event.target.files?.[0])} /></label>
