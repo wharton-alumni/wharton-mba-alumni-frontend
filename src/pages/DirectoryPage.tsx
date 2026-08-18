@@ -40,9 +40,17 @@ export function DirectoryPage() {
     api.getBioBookProfiles().then(setProfiles);
   }, []);
 
-  const visibleProfiles = useMemo(() => (
-    profiles.filter((profile) => profile.batch === selectedBatch && !hasDemoFirstName(profile))
-  ), [profiles, selectedBatch]);
+  const visibleProfiles = useMemo(() => {
+    const deduped = new Map<string, BioBookProfile>();
+    for (const profile of profiles) {
+      if (profile.batch !== selectedBatch || hasDemoFirstName(profile)) continue;
+      const key = canonicalProfileKey(profile);
+      if (!deduped.has(key)) {
+        deduped.set(key, profile);
+      }
+    }
+    return Array.from(deduped.values());
+  }, [profiles, selectedBatch]);
 
   const options = useMemo(() => ({
     locations: unique(visibleProfiles.map((profile) => compactJoin([profile.city, profile.stateCountry], ', '))),
@@ -306,4 +314,36 @@ function lastNameFor(name: string) {
 
 function hasDemoFirstName(profile: BioBookProfile) {
   return firstNameFor(profile.fullLegalName).toLowerCase() === 'demo';
+}
+
+function canonicalProfileKey(profile: BioBookProfile) {
+  const identity = [
+    normalize(profile.fullLegalName),
+    normalize(profile.preferredNameNickname),
+    normalize(profile.personalEmailForClassDirectory),
+    normalize(profile.universityEmailAlias),
+    normalize(profile.linkedinUrl),
+  ].filter(Boolean);
+
+  if (identity.length > 0) {
+    return identity.join('|');
+  }
+
+  return [
+    normalize(profile.fullLegalName),
+    normalize(profile.currentEmployer),
+    normalize(profile.currentTitleRole),
+    String(profile.classYear ?? ''),
+    normalize(profile.city),
+    normalize(profile.stateCountry),
+    normalize(profile.batch),
+  ].join('|');
+}
+
+function normalize(value?: string | null) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[^\p{L}\p{N}@.+/_-]+/gu, '');
 }

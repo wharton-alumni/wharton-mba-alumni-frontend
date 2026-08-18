@@ -3,22 +3,24 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
 import { PasswordField } from '../components/PasswordField';
 import { cohorts, industries } from '../data/options';
-import { bioBookProfileToRegistration, bioBookRegistrationFields } from '../data/biobookFields';
+import { bioBookProfileToFormValues, bioBookProfileToRegistration, bioBookRegistrationFields } from '../data/biobookFields';
 import { api } from '../services/api';
-import type { AlumniProfile } from '../types/domain';
+import type { AlumniProfile, BioBookProfile } from '../types/domain';
 
 type RegistrationFormState = Record<string, string | boolean>;
 type FieldErrors = Record<string, string>;
 type Stage = 'form' | 'code';
 const CONFIRM_PASSWORD_KEY = 'Confirm Password';
 
-function buildInitialForm(email = ''): RegistrationFormState {
+function buildInitialForm(email = '', bioBookProfile?: BioBookProfile | null): RegistrationFormState {
+  if (bioBookProfile) {
+    const initial = bioBookProfileToFormValues(bioBookProfile);
+    initial['Work email'] = email || initial['Work email'] || '';
+    return initial;
+  }
   return Object.fromEntries(
     bioBookRegistrationFields.map((field) => {
       if (field.key === 'Work email') return [field.key, email];
-      if (field.key === 'Cohort') return [field.key, 'Philadelphia'];
-      if (field.key === 'WEMBA class') return [field.key, "WEMBA'52"];
-      if (field.key === 'Industry') return [field.key, 'Technology'];
       if (field.inputType === 'checkbox') return [field.key, false];
       return [field.key, ''];
     }),
@@ -27,9 +29,10 @@ function buildInitialForm(email = ''): RegistrationFormState {
 
 export function RegisterPage() {
   const location = useLocation();
-  const redirectedState = location.state as { email?: string; showConsent?: boolean } | null;
+  const redirectedState = location.state as { email?: string; showConsent?: boolean; bioBookProfile?: BioBookProfile | null; createProfile?: boolean } | null;
   const redirectedEmail = redirectedState?.email ?? '';
-  const [form, setForm] = useState<RegistrationFormState>(() => buildInitialForm(redirectedEmail));
+  const hasPrefilledBioBook = Boolean(redirectedState?.bioBookProfile);
+  const [form, setForm] = useState<RegistrationFormState>(() => buildInitialForm(redirectedEmail, redirectedState?.bioBookProfile ?? null));
   const [consented, setConsented] = useState(!redirectedState?.showConsent);
   const [showConsent, setShowConsent] = useState(Boolean(redirectedState?.showConsent));
   const [error, setError] = useState('');
@@ -93,6 +96,11 @@ export function RegisterPage() {
     try {
       const email = String(form['Work email'] ?? '');
       const session = await api.register(bioBookProfileToRegistration(form));
+      if (hasPrefilledBioBook) {
+        setSession(session.token, session.profile);
+        navigate('/dashboard');
+        return;
+      }
       await api.sendOnboardingCode(email);
       setPendingEmail(email);
       setPendingToken(session.token);

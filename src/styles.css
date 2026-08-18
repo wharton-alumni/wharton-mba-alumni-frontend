@@ -253,9 +253,15 @@ main {
   width: min(440px, 100%);
 }
 
+.auth-panel > div:first-child {
+  text-align: center;
+}
+
 .auth-lockup {
   width: min(260px, 100%);
   height: auto;
+  margin-left: auto;
+  margin-right: auto;
   margin-bottom: 1rem;
   border-radius: 6px;
   padding: 0.7rem 0.9rem;
@@ -385,6 +391,24 @@ main {
 .button.ghost {
   color: #001c4c;
   background: #e8eef6;
+}
+
+.button.text {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  color: #990000;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 900;
+}
+
+.button.text:hover,
+.button.text:focus-visible {
+  color: #6f0000;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
 }
 
 .button.danger {
@@ -2666,12 +2690,10 @@ main {
 .alumni-company-mark {
   display: grid;
   place-items: center;
-  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid #990000;
   padding: 1rem;
   color: #fff;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(153, 0, 0, 0.1)),
-    #0a192f;
+  background: linear-gradient(135deg, #b00020, #7f0018);
   text-align: center;
 }
 

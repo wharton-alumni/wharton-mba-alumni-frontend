@@ -18,7 +18,7 @@ export function Layout() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   const showSidebar = Boolean(profile);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {

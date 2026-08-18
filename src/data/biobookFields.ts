@@ -96,6 +96,66 @@ export function bioBookProfileToRegistration(
   };
 }
 
+export function bioBookProfileToFormValues(profile?: BioBookProfile | null): Record<string, string | boolean> {
+  const values: Record<string, string | boolean> = {};
+  for (const field of bioBookRegistrationFields) {
+    if (field.inputType === 'checkbox') {
+      values[field.key] = false;
+      continue;
+    }
+    values[field.key] = '';
+  }
+  if (!profile) {
+    return values;
+  }
+  values['Full legal name'] = profile.fullLegalName ?? '';
+  values['Preferred name / Nickname'] = profile.preferredNameNickname ?? '';
+  values['Pronouns'] = profile.pronouns ?? '';
+  values['Headshot (professional)'] = profile.headshotProfessional ?? '';
+  values['Cohort'] = profile.cohortCampus ?? '';
+  values['WEMBA class'] = profile.batch ?? '';
+  values['Hometown (where you grew up)'] = profile.hometownWhereYouGrewUp ?? '';
+  values['Current City of Residence'] = profile.currentCityOfResidence ?? profile.city ?? '';
+  values['Languages spoken'] = profile.languagesSpoken ?? '';
+  values['Current employer'] = profile.currentEmployer ?? '';
+  values['Current title / role'] = profile.currentTitleRole ?? '';
+  values['Industry'] = profile.industry ?? '';
+  values['Functional Area'] = profile.functionalArea ?? '';
+  values['Years of professional experience'] = profile.yearsOfProfessionalExperience ?? '';
+  values['Career trajectory in 3 bullets'] = profile.careerTrajectoryIn3Bullets ?? '';
+  values['Notable achievements / awards / patents / publications'] = profile.notableAchievementsAwardsPatentsPublications ?? '';
+  values["Companies you've previously worked at"] = profile.companiesYouPreviouslyWorkedAt ?? '';
+  values['Board seats / advisory roles'] = profile.boardSeatsAdvisoryRoles ?? '';
+  values['Work email'] = profile.personalEmailForClassDirectory ?? profile.universityEmailAlias ?? '';
+  values['LinkedIn URL'] = profile.linkedinUrl ?? '';
+  values['Undergraduate institution & Major'] = profile.undergraduateInstitutionMajor ?? '';
+  values['Graduate institution & Major'] = profile.graduateInstitutionMajor ?? '';
+  values['Certificates'] = profile.certificates ?? '';
+  values['Post-MBA career goal'] = profile.postMbaCareerGoal ?? '';
+  values['Majors'] = profile.majors ?? '';
+  values['Concentrartion'] = profile.concentration ?? '';
+  values['Hidden talent / fun fact'] = profile.hiddenTalentFunFact ?? '';
+  values['Hobbies & interests'] = profile.hobbiesInterests ?? '';
+  values['Sports / fitness you play or follow'] = profile.sportsFitnessYouPlayOrFollow ?? '';
+  values['I can help classmates with...'] = profile.canHelpClassmatesWith ?? '';
+  values["I'd love help with..."] = profile.wouldLoveHelpWith ?? '';
+  values['Industries I want to break into / learn'] = profile.industriesWantToBreakIntoLearn ?? '';
+  values['Open to mentoring'] = profile.willingToMentor;
+  values['Side projects, startups, or ventures'] = profile.sideProjectsStartupsVentures ?? '';
+  values['Looking for co-founders / collaborators in...'] = profile.lookingForCoFoundersCollaboratorsIn ?? '';
+  values["Clubs you're interested in.."] = profile.clubsInterestedIn ?? '';
+  values['Willing to host a class event in your city'] = profile.willingToHostClassEventInYourCity ?? '';
+  values['Willing to be a guest speaker for a club'] = profile.willingToBeGuestSpeakerForClub ?? '';
+  values['Personal email (for class directory)'] = profile.personalEmailForClassDirectory ?? '';
+  values['Mobile Number'] = profile.mobileNumber ?? '';
+  values['Instagram Handle'] = profile.instagramHandle ?? '';
+  values['Instagram Handle 2'] = profile.instagramHandle2 ?? '';
+  values['Personal website / Substack / portfolio'] = profile.personalWebsiteSubstackPortfolio ?? '';
+  values['Are you a military veteran?'] = profile.militaryVeteran ?? '';
+  values['Password'] = '';
+  return values;
+}
+
 export function wembaBatchToClassYear(batch: string) {
   const batchNumber = Number(batch.match(/\d+/)?.[0]);
   return Number.isFinite(batchNumber) && batchNumber > 0 ? 1976 + batchNumber : 2028;

@@ -9,7 +9,7 @@ import type { AlumniProfile } from '../types/domain';
 
 type EditableDetails = Record<string, string | boolean>;
 
-const editableBioBookFields = bioBookRegistrationFields.filter((field) => field.key !== 'Password');
+const editableBioBookFields = bioBookRegistrationFields.filter((field) => field.key !== 'Password' && field.key !== 'Headshot (professional)');
 
 export function ProfileEditPage() {
   const { profile, updateCurrentProfile } = useAuth();
@@ -76,8 +76,8 @@ export function ProfileEditPage() {
         <div className="photo-editor">
           <Avatar name={`${form.firstName} ${form.lastName}`} src={form.avatarUrl} size="large" />
           <div className="photo-editor-fields">
-            <label>Profile photo URL<input value={form.avatarUrl ?? ''} onChange={(event) => updatePhoto(event.target.value)} /></label>
             <label>Upload profile photo<input type="file" accept="image/*" onChange={(event) => handlePhotoUpload(event.target.files?.[0])} /></label>
+            <p className="muted">Upload a photo and we will store it for your profile automatically.</p>
             {form.avatarUrl && <button type="button" className="button ghost compact" onClick={() => updatePhoto('')}>Remove photo</button>}
           </div>
         </div>
@@ -154,7 +154,7 @@ function BioBookEditInput({
     return (
       <label>
         {field.label}
-        <select value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} required={field.required}>
+        <select value={String(value ?? '')} onChange={(event) => onChange(event.target.value)}>
           {!value && <option value="">Select one</option>}
           {field.options.map((option) => <option key={option}>{option}</option>)}
         </select>
@@ -165,7 +165,7 @@ function BioBookEditInput({
   return (
     <label className={field.key.length > 42 ? 'wide-field' : undefined}>
       {field.label}
-      <input type={field.inputType ?? 'text'} value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} required={field.required} />
+      <input type={field.inputType ?? 'text'} value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }
