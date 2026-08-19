@@ -116,6 +116,15 @@ export interface BioBookLookupResponse {
   profile?: BioBookProfile;
 }
 
+export interface OnboardingRecordLookupRequest {
+  fullName: string;
+}
+
+export interface OnboardingRecordLookupResponse {
+  found: boolean;
+  destination?: string;
+}
+
 export interface BioBookClaimResponse extends LoginResponse {
   biobookProfile: BioBookProfile;
 }

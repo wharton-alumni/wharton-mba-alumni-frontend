@@ -11,6 +11,8 @@ import type {
   EventStatus,
   LoginResponse,
   OnboardingLookupResponse,
+  OnboardingRecordLookupRequest,
+  OnboardingRecordLookupResponse,
   PasswordResetResponse,
   RegistrationRequest,
   SendCodeResponse,
@@ -96,6 +98,20 @@ export const api = {
     request<VerifyCodeResponse>('/onboarding/verify-code', {
       method: 'POST',
       body: JSON.stringify({ email: toClaimEmail(email), code }),
+      skipAuth: true,
+    }),
+
+  findOnboardingRecord: async (payload: OnboardingRecordLookupRequest): Promise<OnboardingRecordLookupResponse> =>
+    request<OnboardingRecordLookupResponse>('/onboarding/find-record', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
+    }),
+
+  verifyOnboardingRecord: async (fullName: string, code: string): Promise<BioBookLookupResponse> =>
+    request<BioBookLookupResponse>('/onboarding/verify-record', {
+      method: 'POST',
+      body: JSON.stringify({ fullName, code }),
       skipAuth: true,
     }),
 

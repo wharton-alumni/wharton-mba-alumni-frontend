@@ -91,7 +91,7 @@ export function DirectoryProfilePage() {
                 <h1>{profile.fullLegalName}</h1>
                 <p className="role-line">{compactJoin([profile.currentTitleRole, profile.currentEmployer], ' at ') || 'Role not provided'}</p>
                 <div className="identity-lines">
-                  {profile.personalEmailForClassDirectory && <span><Mail size={15} /> {profile.personalEmailForClassDirectory}</span>}
+                  {email !== 'Not provided' && <span><Mail size={15} /> {email}</span>}
                   {location && <span><MapPin size={15} /> {location}</span>}
                   {profile.linkedinUrl && <a href={normalizeUrl(profile.linkedinUrl)} target="_blank" rel="noreferrer"><LinkIcon size={15} /> LinkedIn</a>}
                 </div>

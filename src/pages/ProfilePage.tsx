@@ -30,7 +30,7 @@ export function ProfilePage() {
   const city = stringValue(bioBook.city) || stringValue(bioBook.currentCityOfResidence) || profile.city;
   const stateCountry = stringValue(bioBook.stateCountry) || profile.stateCountry;
   const location = compactJoin([city, stateCountry], ', ');
-  const email = stringValue(bioBook.personalEmailForClassDirectory) || profile.email;
+  const email = displayEmail(bioBook, profile.email);
   const phone = stringValue(bioBook.mobileNumber) || profile.phoneNumber;
   const avatarUrl = stringValue(bioBook.headshotProfessional) || profile.avatarUrl;
   const interests = splitList(`${stringValue(bioBook.clubsInterestedIn)}, ${stringValue(bioBook.hobbiesInterests)}, ${stringValue(bioBook.industriesWantToBreakIntoLearn)}`).slice(0, 8);
@@ -153,7 +153,7 @@ export function ProfilePage() {
           <ProfilePanel title={`About ${preferred}`}>
             <dl className="side-fact-list">
               <div><dt><CalendarDays size={16} /> Member Since</dt><dd>{stringValue(bioBook.batch) || 'Not provided'}</dd></div>
-              <div><dt><Mail size={16} /> Email</dt><dd>{profile.email || 'Not provided'}</dd></div>
+              <div><dt><Mail size={16} /> Email</dt><dd>{email || 'Not provided'}</dd></div>
               <div><dt><UsersRound size={16} /> Cohort</dt><dd>{profile.cohortCampus || 'Not provided'}</dd></div>
               <div><dt><BriefcaseBusiness size={16} /> Experience</dt><dd>{stringValue(bioBook.yearsOfProfessionalExperience) || 'Not provided'}</dd></div>
             </dl>
@@ -216,6 +216,16 @@ function stringValue(value: string | boolean | undefined) {
 
 function firstAvailable(...values: string[]) {
   return values.find((value) => value && value.trim()) ?? '';
+}
+
+function displayEmail(details: ProfileDetails, portalEmail: string) {
+  return firstAvailable(
+    stringValue(details.personalEmailForClassDirectory),
+    stringValue(details['Personal email (for class directory)']),
+    stringValue(details['Work email']),
+    stringValue(details.universityEmailAlias),
+    portalEmail,
+  );
 }
 
 function splitList(value: string) {

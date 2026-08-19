@@ -6,12 +6,16 @@ import { PasswordField } from '../components/PasswordField';
 import { brandAssets, brandCopy } from '../data/brand';
 import type { BioBookProfile, OnboardingLookupResponse } from '../types/domain';
 
-type LoginStage = 'lookup' | 'code' | 'signin' | 'forgot' | 'create';
+type LoginStage = 'lookup' | 'code' | 'record' | 'recordCode' | 'signin' | 'forgot';
 
 export function LoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [password, setPassword] = useState('');
+  const [recordFullName, setRecordFullName] = useState('');
+  const [recordVerificationCode, setRecordVerificationCode] = useState('');
+  const [recordCodeDestination, setRecordCodeDestination] = useState('');
+  const [activeOnboardingEmail, setActiveOnboardingEmail] = useState('');
   const [matchedProfile, setMatchedProfile] = useState<OnboardingLookupResponse | null>(null);
   const [matchedBioBookProfile, setMatchedBioBookProfile] = useState<BioBookProfile | null>(null);
   const [stage, setStage] = useState<LoginStage>('lookup');
@@ -24,6 +28,7 @@ export function LoginPage() {
   const normalizedIdentifier = identifier.trim().toLowerCase();
   const localEmailPart = normalizedIdentifier.split('@')[0];
   const claimEmail = `${localEmailPart}@wharton.upenn.edu`;
+  const flowEmail = activeOnboardingEmail || claimEmail;
 
   async function handleLookup(event: FormEvent) {
     event.preventDefault();
@@ -35,10 +40,7 @@ export function LoginPage() {
     setError('');
     setMatchedBioBookProfile(null);
     try {
-      const [result, bioBookResult] = await Promise.all([
-        api.lookupOnboarding(normalizedIdentifier),
-        api.lookupBioBook(normalizedIdentifier),
-      ]);
+      const result = await api.lookupOnboarding(claimEmail);
       setMatchedProfile(result);
 
       if (result.exists && result.alreadyClaimed) {
@@ -48,34 +50,20 @@ export function LoginPage() {
         return;
       }
 
-      if (bioBookResult.exists && bioBookResult.profile) {
-        setMatchedBioBookProfile(bioBookResult.profile);
-        setModal({
-          title: 'Consent to store profile data',
-          body: 'Your profile may be pre-populated with existing alumni details. By continuing, you agree to allow us to store and use your account and profile information to provide you with access to the alumni portal.',
-          actionLabel: 'Continue',
-          action: async () => {
-            await api.recordConsent(normalizedIdentifier, 'biobook-claim');
-            await handleSendVerificationCode();
-          },
-        });
-        return;
-      }
-
-      setStage('create');
-      setError('This email does not exist in the BioBook yet. Please create a profile below.');
+      await handleSendVerificationCode(claimEmail);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to verify your BioBook record.');
+      setError(err instanceof Error ? err.message : 'Unable to start the login flow.');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleSendVerificationCode() {
+  async function handleSendVerificationCode(email = flowEmail) {
     setLoading(true);
     setError('');
     try {
-      await api.sendOnboardingCode(claimEmail);
+      setActiveOnboardingEmail(email);
+      await api.sendOnboardingCode(email);
       setVerificationCode('');
       setStage('code');
     } catch (err) {
@@ -94,16 +82,87 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await api.verifyOnboardingCode(claimEmail, verificationCode.trim());
-      navigate('/register', {
-        state: {
-          email: claimEmail,
-          showConsent: false,
-          bioBookProfile: matchedBioBookProfile,
+      await api.verifyOnboardingCode(flowEmail, verificationCode.trim());
+      setStage('record');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to verify the code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleFindRecord(event: FormEvent) {
+    event.preventDefault();
+    if (!recordFullName.trim()) {
+      setError('Enter your full name so we can check for a matching class record.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const result = await api.findOnboardingRecord({
+        fullName: recordFullName.trim(),
+      });
+      if (result.found && result.destination) {
+        setRecordVerificationCode('');
+        setRecordCodeDestination(result.destination);
+        setStage('recordCode');
+        return;
+      }
+
+      setModal({
+        title: 'Create your profile',
+        body: 'We could not find a matching BioBook record from those details. You can still create a profile for the alumni portal.',
+        actionLabel: 'Create profile',
+        action: async () => {
+          await api.recordConsent(flowEmail, 'manual-registration');
+          navigate('/register', {
+            state: {
+              email: flowEmail,
+              showConsent: false,
+              createProfile: true,
+            },
+          });
         },
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to verify the code. Please try again.');
+      setError(err instanceof Error ? err.message : 'Unable to look up your class record.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyRecordCode(event: FormEvent) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(recordVerificationCode.trim())) {
+      setError('Enter the 6-digit verification code sent to your personal email.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const result = await api.verifyOnboardingRecord(recordFullName.trim(), recordVerificationCode.trim());
+      if (!result.exists || !result.profile) {
+        throw new Error('We could not verify that BioBook record.');
+      }
+      setMatchedBioBookProfile(result.profile);
+      setModal({
+        title: 'Consent to store profile data',
+        body: 'Your profile may be pre-populated with existing alumni details. By continuing, you agree to allow us to store and use your account and profile information to provide you with access to the alumni portal.',
+        actionLabel: 'Continue',
+        action: async () => {
+          await api.recordConsent(flowEmail, 'biobook-claim');
+          navigate('/register', {
+            state: {
+              email: flowEmail,
+              showConsent: false,
+              bioBookProfile: result.profile,
+            },
+          });
+        },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to verify the BioBook claim code.');
     } finally {
       setLoading(false);
     }
@@ -156,7 +215,7 @@ export function LoginPage() {
     <section className="auth-page">
       <form
         className="panel auth-panel"
-        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'code' ? handleVerifyCode : stage === 'forgot' ? handleForgotPassword : handleLookup}
+        onSubmit={stage === 'signin' ? handlePasswordSignIn : stage === 'code' ? handleVerifyCode : stage === 'record' ? handleFindRecord : stage === 'recordCode' ? handleVerifyRecordCode : stage === 'forgot' ? handleForgotPassword : handleLookup}
       >
         <div>
           <img src={brandAssets.executiveMbaLogo} alt="Wharton Executive MBA" className="auth-lockup" />
@@ -175,9 +234,10 @@ export function LoginPage() {
         <p className="muted">
           {stage === 'lookup' && 'Enter your university email to check if your prefilled WEMBA alumni record is available.'}
           {stage === 'code' && 'Enter the 6-digit verification code sent to your university email.'}
+          {stage === 'record' && 'Enter your full name so we can look for a matching BioBook record.'}
+          {stage === 'recordCode' && `We found your record. Please enter the verification code sent to ${recordCodeDestination} to claim your profile.`}
           {stage === 'signin' && 'Sign in with an existing portal password.'}
           {stage === 'forgot' && 'Send a password reset link to the university email.'}
-          {stage === 'create' && 'This email does not exist in the BioBook yet. Please create a profile below.'}
         </p>
 
         <label>
@@ -188,6 +248,7 @@ export function LoginPage() {
               maxLength={60}
               onChange={(event) => setIdentifier(event.target.value.split('@')[0].slice(0, 60))}
               placeholder="your email id"
+              disabled={stage === 'code' || stage === 'record' || stage === 'recordCode'}
               required
             />
             <span>@wharton.upenn.edu</span>
@@ -203,6 +264,33 @@ export function LoginPage() {
               maxLength={6}
               value={verificationCode}
               onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="123456"
+              required
+            />
+          </label>
+        )}
+
+        {stage === 'record' && (
+          <label>
+            Full name
+            <input
+              value={recordFullName}
+              onChange={(event) => setRecordFullName(event.target.value)}
+              placeholder="As it appears in the BioBook"
+              required
+            />
+          </label>
+        )}
+
+        {stage === 'recordCode' && (
+          <label>
+            BioBook claim code
+            <input
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={recordVerificationCode}
+              onChange={(event) => setRecordVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="123456"
               required
             />
@@ -225,11 +313,11 @@ export function LoginPage() {
           className="button primary"
           disabled={loading}
         >
-          {loading ? 'Working...' : stage === 'lookup' || stage === 'create' ? 'Login' : stage === 'code' ? 'Verify code' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
+          {loading ? 'Working...' : stage === 'lookup' ? 'Login' : stage === 'code' ? 'Verify code' : stage === 'record' ? 'Find my record' : stage === 'recordCode' ? 'Claim profile' : stage === 'forgot' ? 'Send reset link' : 'Log in'}
         </button>
 
         {stage === 'code' && (
-          <button type="button" className="button ghost" disabled={loading} onClick={handleSendVerificationCode}>
+          <button type="button" className="button ghost" disabled={loading} onClick={() => handleSendVerificationCode(flowEmail)}>
             Send verification code again
           </button>
         )}
@@ -237,26 +325,6 @@ export function LoginPage() {
         {stage === 'signin' && (
           <button type="button" className="button ghost" disabled={loading} onClick={() => { setStage('forgot'); setError(''); }}>
             Forgot password
-          </button>
-        )}
-
-        {stage === 'create' && (
-          <button
-            type="button"
-            className="button ghost"
-            disabled={loading}
-            onClick={() => {
-              setModal({
-                title: 'Verify your email first',
-                body: `We will send a verification code to ${claimEmail}. After you verify it, you can create your profile.`,
-                actionLabel: 'Send verification code',
-                action: async () => {
-                  await handleSendVerificationCode();
-                },
-              });
-            }}
-          >
-            Create Profile
           </button>
         )}
 
