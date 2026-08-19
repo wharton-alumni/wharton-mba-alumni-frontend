@@ -162,7 +162,7 @@ export function LoginPage() {
         },
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to verify the BioBook claim code.');
+      setError(err instanceof Error ? err.message : 'Unable to verify the Verification Code.');
     } finally {
       setLoading(false);
     }
@@ -284,7 +284,7 @@ export function LoginPage() {
 
         {stage === 'recordCode' && (
           <label>
-            BioBook claim code
+            Verification Code
             <input
               inputMode="numeric"
               pattern="[0-9]{6}"
